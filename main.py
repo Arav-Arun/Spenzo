@@ -9,7 +9,9 @@ the ability to read, write, and analyze the user's personal financial data.
 import os
 import random
 import json
-import urllib.request
+import urllib.parse
+import httpx
+import requests
 from datetime import datetime, timedelta, timezone
 from fastmcp import FastMCP
 from supabase import create_client, Client
@@ -39,15 +41,28 @@ CATEGORIES_PATH = os.path.join(os.path.dirname(__file__), "categories.json")
 # to execute the tools defined below seamlessly.
 mcp = FastMCP("ExpenseTracker")
 
+
+def _resolve_phone(phone_number: str = "") -> str:
+    """Return the explicitly passed phone, else the phone linked to this session."""
+    return phone_number or os.environ.get("LINKED_PHONE", "")
+
+
+def _filter_by_phone(query, phone: str):
+    """Restrict a Supabase query to one user, matching both stored phone formats (legacy 'whatsapp:' prefix)."""
+    if phone:
+        query = query.or_(f"phone_number.eq.{phone},phone_number.eq.whatsapp:{phone}")
+    return query
+
+
 # CORE EXPENSE TOOLS (CRUD)
 
 # These functions allow the LLM to Create, Read, Update, and Delete records.
 
 @mcp.tool()
 def add_expense(date: str, amount: float, category: str, subcategory: str = "", note: str = "", phone_number: str = ""):
-    '''Add a new expense entry to the database. Include the user's phone_number so analytics can filter by user.'''
+    '''Add a new expense entry to the database. Include the user's phone_number so summaries can filter by user.'''
     # Fall back to the linked phone from this session if not explicitly provided
-    resolved_phone = phone_number or os.environ.get("LINKED_PHONE", "")
+    resolved_phone = _resolve_phone(phone_number)
     data = {"date": date, "amount": amount, "category": category, "subcategory": subcategory, "note": note, "phone_number": resolved_phone}
     res = supabase.table("expenses").insert(data).execute()
     return {"status": "ok", "id": res.data[0]['id']}
@@ -55,21 +70,18 @@ def add_expense(date: str, amount: float, category: str, subcategory: str = "", 
 @mcp.tool()
 def list_expenses(start_date: str, end_date: str, phone_number: str = ""):
     '''List expense entries within an inclusive date range for the current user only.'''
-    resolved_phone = phone_number or os.environ.get("LINKED_PHONE", "")
+    resolved_phone = _resolve_phone(phone_number)
     query = supabase.table("expenses").select("id, date, amount, category, subcategory, note").gte("date", start_date).lte("date", end_date)
-    if resolved_phone:
-        # Filter by both stored formats to handle legacy data
-        query = query.or_(f"phone_number.eq.{resolved_phone},phone_number.eq.whatsapp:{resolved_phone}")
+    query = _filter_by_phone(query, resolved_phone)
     res = query.order("id").execute()
     return res.data
 
 @mcp.tool()
 def summarize(start_date: str, end_date: str, category: str = None, phone_number: str = ""):
     '''Summarize expenses by category within an inclusive date range for the current user only.'''
-    resolved_phone = phone_number or os.environ.get("LINKED_PHONE", "")
+    resolved_phone = _resolve_phone(phone_number)
     query = supabase.table("expenses").select("category, amount").gte("date", start_date).lte("date", end_date)
-    if resolved_phone:
-        query = query.or_(f"phone_number.eq.{resolved_phone},phone_number.eq.whatsapp:{resolved_phone}")
+    query = _filter_by_phone(query, resolved_phone)
     if category:
         query = query.eq("category", category)
     res = query.execute()
@@ -84,15 +96,11 @@ def summarize(start_date: str, end_date: str, category: str = None, phone_number
 @mcp.tool()
 def search_expenses(query: str, phone_number: str = ""):
     '''Search expenses by category, subcategory, or note for the current user only.'''
-    resolved_phone = phone_number or os.environ.get("LINKED_PHONE", "")
+    resolved_phone = _resolve_phone(phone_number)
     base = supabase.table("expenses").select("id, date, amount, category, subcategory, note")
-    if resolved_phone:
-        # Filter by user then keyword-search within their data
-        keyword_filter = f"category.ilike.%{query}%,subcategory.ilike.%{query}%,note.ilike.%{query}%"
-        phone_filter = f"phone_number.eq.{resolved_phone},phone_number.eq.whatsapp:{resolved_phone}"
-        res = base.or_(phone_filter).or_(keyword_filter).order("date", desc=True).limit(20).execute()
-    else:
-        res = base.or_(f"category.ilike.%{query}%,subcategory.ilike.%{query}%,note.ilike.%{query}%").order("date", desc=True).limit(20).execute()
+    base = _filter_by_phone(base, resolved_phone)
+    keyword_filter = f"category.ilike.%{query}%,subcategory.ilike.%{query}%,note.ilike.%{query}%"
+    res = base.or_(keyword_filter).order("date", desc=True).limit(20).execute()
     return res.data
 
 @mcp.tool()
@@ -132,7 +140,6 @@ def categories():
                 {"name": "Entertainment", "subcategories": ["Movies", "Games", "Events"]}
             ]
         }
-        import json
         with open(CATEGORIES_PATH, "w", encoding="utf-8") as f:
             json.dump(default_categories, f, indent=4)
             
@@ -150,14 +157,13 @@ def spenzo_welcome() -> str:
         return (
             f"Welcome back to Spenzo! Your expenses are synced with WhatsApp number {linked_phone}.\n"
             "You can log expenses, ask for summaries, search, edit, or delete entries.\n"
-            "Visit https://www.spenzo.xyz/analytics to see your full dashboard."
+            "Just ask 'summarize my spending this month' for a full breakdown."
         )
     return (
         "Welcome to Spenzo - your AI expense tracker!\n\n"
         "You can log expenses naturally: 'Spent ₹200 on lunch' or 'Log $5 for coffee'.\n"
         "You can also ask for live crypto prices, like 'What is the price of SOL?'.\n\n"
-        "💡 TIP: Link your WhatsApp number to sync expenses logged here with your WhatsApp bot "
-        "and personal analytics at spenzo.xyz/analytics.\n"
+        "💡 TIP: Link your WhatsApp number to sync expenses logged here with your WhatsApp bot.\n"
         "Just say: 'Link my WhatsApp number' and I'll guide you through a quick verification!"
     )
 
@@ -172,7 +178,6 @@ def register_phone(phone_number: str):
     Sends a 6-digit OTP to the given WhatsApp number via Twilio.
     The phone_number must be in international format e.g. +919876543210.
     """
-    import requests
     code = str(random.randint(100000, 999999))
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
 
@@ -237,14 +242,13 @@ def verify_phone(phone_number: str, code: str):
     # Set in current process too
     os.environ["LINKED_PHONE"] = phone_number
 
-    return {"status": "verified", "message": f"✅ Success! Your WhatsApp number {phone_number} is now linked. All expenses logged here will appear in your analytics at https://www.spenzo.xyz/analytics"}
+    return {"status": "verified", "message": f"✅ Success! Your WhatsApp number {phone_number} is now linked. All expenses are now synced across WhatsApp and Claude Desktop — ask me to summarize anytime."}
 
 # EXTERNAL APIS & UTILITIES
 
 @mcp.tool()
 def analyze_web3_wallet(wallet_address: str) -> str:
     '''Live Tool: Analyzes a public Web3 wallet (Ethereum or Solana) fetching real token balances via Helius or Alchemy. Use whenever a user asks to scan a wallet 0x... or 7x...'''
-    import httpx
     wallet_address = wallet_address.strip()
     
     # Simple blockchain detection
@@ -317,7 +321,6 @@ def analyze_web3_wallet(wallet_address: str) -> str:
 @mcp.tool()
 def simulate_dex_swap(token_in: str, token_out: str, amount: float) -> str:
     '''Live Tool: Simulates a token swap on a DEX aggregator (like Jupiter or Uniswap) to fetch live routing quotes without executing the trade. Use when user asks "If I swap X for Y..."'''
-    import httpx
     # Free Jupiter Quote API for Solana tokens
     symbol_to_mint = {
         "sol": "So11111111111111111111111111111111111111112",
@@ -361,7 +364,6 @@ def simulate_dex_swap(token_in: str, token_out: str, amount: float) -> str:
 @mcp.tool()
 def analyze_gas_burn(wallet_address: str) -> str:
     '''Live Tool: Sweeps a wallet's recent transaction history to calculate real network fees burned on gas. Use when user asks "How much did I burn on gas?"'''
-    import httpx
     wallet_address = wallet_address.strip()
     chain = "Ethereum" if wallet_address.startswith("0x") and len(wallet_address) == 42 else "Solana"
     
@@ -402,7 +404,6 @@ def analyze_gas_burn(wallet_address: str) -> str:
 @mcp.tool()
 def check_staking_yield(wallet_address: str) -> str:
     '''Live Tool: Scans a wallet for active staking positions including Liquid Staking Tokens (stETH, JitoSOL) and native validator stakes on Solana. Use when user asks "How much interest am I earning?".'''
-    import httpx
     wallet_address = wallet_address.strip()
     chain = "Ethereum" if wallet_address.startswith("0x") and len(wallet_address) == 42 else "Solana"
     
@@ -473,7 +474,6 @@ def check_staking_yield(wallet_address: str) -> str:
 @mcp.tool()
 def generate_upi_payment_link(upi_id: str, amount: float, payee_name: str = "Spenzo User", note: str = "") -> str:
     '''Live Tool: Generates a 1-click UPI payment deep link. Use this when the user needs to request money from someone (e.g., "Alex owes me 500"). The returned link can be sent directly to the debtor so they can instantly pay via Google Pay, PhonePe, or Paytm.'''
-    import urllib.parse
     params = {
         "pa": upi_id,
         "pn": payee_name,
@@ -497,19 +497,17 @@ def generate_upi_payment_link(upi_id: str, amount: float, payee_name: str = "Spe
 @mcp.tool()
 def log_debt(debtor_name: str, amount: float, reason: str, phone_number: str = "") -> str:
     '''Agentic Tool: Log an IOU / Debt when someone owes the user money. It natively stores it in the Supabase 'expenses' table under the 'Receivable' category. Use this whenever the user says "X owes me Y".'''
-    resolved_phone = phone_number or os.environ.get("LINKED_PHONE", "")
+    resolved_phone = _resolve_phone(phone_number)
     data = {"date": datetime.now().isoformat()[:10], "amount": amount, "category": "Receivable", "subcategory": debtor_name, "note": reason, "phone_number": resolved_phone}
     res = supabase.table("expenses").insert(data).execute()
     return f"✅ **Debt Logged**: {debtor_name} officially owes you ₹{amount} for '{reason}'. I will track this until settled!"
 
 @mcp.tool()
-@mcp.tool()
 def list_debts(upi_id: str = "", phone_number: str = "") -> str:
     '''Agentic Tool: List all people who currently owe the user money. Critically, this function automatically generates a dynamic UPI Intent link for every single debt so the user can easily collect the cash in 1 click. If you don't know the user's UPI ID, leave upi_id empty.'''
-    resolved_phone = phone_number or os.environ.get("LINKED_PHONE", "")
+    resolved_phone = _resolve_phone(phone_number)
     query = supabase.table("expenses").select("id, amount, subcategory, note").eq("category", "Receivable")
-    if resolved_phone:
-        query = query.or_(f"phone_number.eq.{resolved_phone},phone_number.eq.whatsapp:{resolved_phone}")
+    query = _filter_by_phone(query, resolved_phone)
     res = query.execute()
     
     if not res.data:
@@ -531,7 +529,6 @@ def list_debts(upi_id: str = "", phone_number: str = "") -> str:
             reason = row['note']
             
             # Auto-generate dynamic real UPI collect link
-            import urllib.parse
             upi_url = f"upi://pay?pa={upi_id}&pn=SpenzoUser&am={amt}&cu=INR&tn={urllib.parse.quote(reason)}"
             report.append(f"- **{debtor}** owes you **₹{amt}** for '{reason}'.")
             report.append(f"  🔗 1-Click Auto-Collect: `{upi_url}`\\n")
@@ -541,7 +538,6 @@ def list_debts(upi_id: str = "", phone_number: str = "") -> str:
 @mcp.tool()
 def get_crypto_price(ticker: str) -> str:
     '''Fetch the exact live price of a cryptocurrency (e.g., BTC, ETH, SOL). The response will include USD and INR prices. Extremely useful for accurate expense logging when the user paid in crypto. Pass the symbol (e.g. sol) or name (e.g. solana).'''
-    import httpx
     ticker = ticker.lower().strip()
     
     # Common name to symbol mapping since Coinbase uses symbols

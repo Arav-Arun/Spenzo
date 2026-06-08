@@ -1,21 +1,44 @@
-# Python-generated files
+# Python
 __pycache__/
 *.py[oc]
+*.egg-info
+*.whl
+
+# Virtual environments
+.venv/
+
+# Build artifacts
 build/
 dist/
 wheels/
-*.egg-info
+*.spec
 
-# Virtual environments
-.venv
-
-# Database and configuration files
+# Database and secrets
 *.db
 *.sqlite3
 .env
 
-# MacOS System Files
+# macOS
 .DS_Store
-.vercel
 
-*.spec
+# Vercel
+.vercel/
+
+# Node / Website build outputs
+website/node_modules/
+website/dist/
+
+# Lock files (keep uv.lock, ignore package-lock)
+website/package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Removed from repo (local-only files)
+FEATURES.md
+sse_relay.py
+build_binary.sh
+website/README.md

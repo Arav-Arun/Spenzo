@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { ArrowRight, Terminal, MessageCircle, Bot, Zap, Image, DollarSign, Bitcoin, LayoutDashboard, GlobeLock, Database, Brain, Palette, Code2, LineChart, Gem, FileText, ArrowLeftRight, TrendingUp, Flame, QrCode, Users, Search, Edit3, Download } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowRight, Terminal, MessageCircle, Bot, Zap, Image, DollarSign, Bitcoin, GlobeLock, Database, Brain, Palette, Code2, LineChart, Gem, FileText, ArrowLeftRight, TrendingUp, Flame, QrCode, Users, Search, Edit3, Download } from 'lucide-react';
 
 const CLAUDE_IMGS = Array.from({ length: 13 }, (_, i) => `/screenshots/img${i + 1}.png`);
 const WHATSAPP_IMGS = [
@@ -186,14 +185,6 @@ export default function Home() {
           <img src="/spenzo-logo.png" alt="Spenzo Logo" className="h-8 w-auto group-hover:scale-105 transition-transform duration-300" />
           <span className="font-semibold tracking-tight text-lg">Spenzo</span>
         </a>
-        <nav className="flex items-center gap-6 ml-8">
-          <Link 
-            to="/analytics" 
-            className="font-semibold tracking-wide uppercase bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2 rounded-sm text-sm px-4 py-2 hover:border-[#a7dd5d]"
-          >
-            <LineChart size={16} /> Analytics
-          </Link>
-        </nav>
       </header>
 
       {/* Hero Section */}
@@ -387,12 +378,12 @@ export default function Home() {
                     <div className="w-10 h-10 rounded-full bg-[#a7dd5d]/10 text-[#a7dd5d] flex items-center justify-center font-bold shrink-0 border border-[#a7dd5d]/20 group-hover:bg-[#a7dd5d] group-hover:text-black transition-colors">1</div>
                     <div className="w-full">
                       <h4 className="text-white font-bold text-lg mb-2">Download the App</h4>
-                      <p className="text-neutral-400 leading-relaxed">Download our zero-setup standalone executable from Google Drive to your Desktop. Absolutely no Python installation or coding required!</p>
+                      <p className="text-neutral-400 leading-relaxed">Download our zero-setup standalone executable from GitHub Releases. Absolutely no Python installation or coding required!</p>
                       <div className="flex flex-wrap gap-3 mt-4">
-                        <a href="https://drive.google.com/drive/folders/1hJIwEehKF4R0T--kcmxNspcS11a5qXkg?usp=share_link" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-black bg-[#a7dd5d] py-2 px-5 rounded font-semibold hover:bg-white transition-colors">
+                        <a href="https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-mac" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-black bg-[#a7dd5d] py-2 px-5 rounded font-semibold hover:bg-white transition-colors">
                             <Download size={18} /> Download Mac Binary
                         </a>
-                        <a href="https://drive.google.com/drive/folders/1hJIwEehKF4R0T--kcmxNspcS11a5qXkg?usp=share_link" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-neutral-300 bg-[#1c1c1c] border border-white/10 py-2 px-5 rounded font-semibold hover:bg-[#a7dd5d] hover:text-black hover:border-[#a7dd5d] transition-colors">
+                        <a href="https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-win.exe" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-neutral-300 bg-[#1c1c1c] border border-white/10 py-2 px-5 rounded font-semibold hover:bg-[#a7dd5d] hover:text-black hover:border-[#a7dd5d] transition-colors">
                             <Download size={18} /> Download Windows .exe
                         </a>
                       </div>
@@ -524,7 +515,6 @@ export default function Home() {
               { icon: Image, title: 'Vision OCR Parsing', desc: 'Snap a photo of a crumpled receipt. The system extracts the merchant and exact total automatically.' },
               { icon: Search, title: 'Deep Semantic Search', desc: 'Ask "Did I buy coffee last month?" Query your entire PostgreSQL ledger using pure natural language.' },
               { icon: Edit3, title: 'Ledger Management', desc: 'Make a mistake? Simply say "Wait, that Uber was actually ₹500" and the bot actively patches the database.' },
-              { icon: LayoutDashboard, title: 'Real-time Analytics', desc: 'View beautiful, dynamically updating mobile-optimized spending charts and category donuts.' },
               { icon: GlobeLock, title: 'Cross-Platform Sync', desc: 'Link your desktop Claude MCP with your WhatsApp isolated session securely via Twilio OTP.' },
               { icon: Users, title: 'The Splitwise Killer', desc: 'A dedicated IOU Ledger. Ask "Who owes me?" to list all active debtors.' },
               { icon: QrCode, title: 'Dynamic UPI Dispatch', desc: 'Spenzo instantly builds 1-click GPay/PhonePe upi://pay intent links to settle those debts instantly.' },

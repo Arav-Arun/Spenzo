@@ -9,42 +9,30 @@ import os
 import json
 import asyncio
 import base64
+import logging
 import httpx
+import requests
 from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 from twilio.rest import Client as TwilioClient
-from supabase import create_client
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 # CONFIGURATION & SETUP
 
-# This section loads secret keys from the .env file, sets up the FastAPI application, and configures cross-origin sharing for the web dashboard.
+# This section loads secret keys from the .env file and sets up the FastAPI application.
 load_dotenv()
 app = FastAPI()
 
-# Allow the analytics page (spenzo.xyz) to call our API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://www.spenzo.xyz", "https://spenzo.xyz", "http://localhost"],
-    allow_methods=["GET"],
-    allow_headers=["*"],
-)
-
-# Supabase client for the analytics proxy endpoint
-_supabase_url = os.environ.get("SUPABASE_URL", "")
-_supabase_key = os.environ.get("SUPABASE_KEY", "")
-sb = create_client(_supabase_url, _supabase_key) if _supabase_url and _supabase_key else None
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger("spenzo")
 
 openai_client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = os.environ.get("TWILIO_WHATSAPP_NUMBER")
-WEBSITE_URL = "https://www.spenzo.xyz"
-ANALYTICS_URL = f"{WEBSITE_URL}/analytics"
 
 if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
     twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -76,8 +64,6 @@ Your AI-powered personal finance command center. Just type naturally and I'll ha
 🔥 *Gas Burn Analyzer* — "How much did I burn on gas?" → Real on-chain data.
 🚜 *Staking Crawler* — "How much did I earn staking?" → Live LST positions.
 
-📊 *Live Dashboard* — View your full analytics at spenzo.xyz/analytics
-
 Spenzo handles the math, FX conversions, and categories for you. Try it out!"""
 
 SYSTEM_PROMPT = f"""You are Spenzo, a fast and sharp personal finance assistant on WhatsApp.
@@ -97,16 +83,15 @@ Miscellaneous: Gifts, Personal Care, Other
 RULES:
 1. Log requests ("spent X on Y", "X rupees for Z") → use the add_expense tool immediately, no questions.
 2. After logging → confirm in 1 line ONLY: "✅ ₹120 logged - Samosa Chaat / Food & Dining"
-3. For analytics/dashboard requests → reply: "📊 View your full dashboard here: {ANALYTICS_URL}"
-4. For summaries → call summarize or list_expenses and present results clearly in 3-5 lines.
-5. For greetings ("hi", "hello") → reply with the full welcome message.
-6. Always reply in under 4 lines, except for welcome or summaries.
-7. Use ₹ symbol for Indian Rupees, $ for USD.
-8. NEVER output your internal thoughts or technical function names like "Call add_expense" in your responses to the user. Only output the final user-friendly message.
-9. If a user asks to edit, update, or delete an expense, ALWAYS use the `search_expenses` tool first to find the `expense_id`. NEVER ask the user for the ID.
+3. For analytics/dashboard/summary requests → call summarize or list_expenses and present the breakdown clearly in 3-5 lines.
+4. For greetings ("hi", "hello") → reply with the full welcome message.
+5. Always reply in under 4 lines, except for welcome or summaries.
+6. Use ₹ symbol for Indian Rupees, $ for USD.
+7. NEVER output your internal thoughts or technical function names like "Call add_expense" in your responses to the user. Only output the final user-friendly message.
+8. If a user asks to edit, update, or delete an expense, ALWAYS use the `search_expenses` tool first to find the `expense_id`. NEVER ask the user for the ID.
 
-10. UPI IDs: If the user provides a string that looks like a UPI ID (e.g. name@bank, phone@upi, etc.), they are responding to your request for a UPI ID to generate collection links. Immediately call `list_debts` with that UPI ID!
-11. Wallet Addresses: If the user provides a string that looks like a crypto wallet address (e.g. starts with `0x` for Ethereum, or a long base58 string for Solana), they are responding to your request to analyze their wallet. Immediately call `analyze_web3_wallet` with that address!
+9. UPI IDs: If the user provides a string that looks like a UPI ID (e.g. name@bank, phone@upi, etc.), they are responding to your request for a UPI ID to generate collection links. Immediately call `list_debts` with that UPI ID!
+10. Wallet Addresses: If the user provides a string that looks like a crypto wallet address (e.g. starts with `0x` for Ethereum, or a long base58 string for Solana), they are responding to your request to analyze their wallet. Immediately call `analyze_web3_wallet` with that address!
 
 NEW CAPABILITIES (MATH & VISION):
 - MULTI-CURRENCY: If the user mentions a foreign currency ($, €, £, etc.), natively convert it to INR (₹) using your best rough estimate of the current exchange rate. Pass the INR amount to `add_expense`, and explicitly state the original currency and your rough conversion rate in the `note` field.
@@ -138,7 +123,7 @@ def send_whatsapp(to: str, body: str, media_url: str = None):
     Send a WhatsApp message via Twilio.
     If media_url is provided, it attaches the image to the response.
     """
-    print(f"DEBUG send_whatsapp called: to={to}, has_media={bool(media_url)}, client_ready={bool(twilio_client)}", flush=True)
+    logger.debug("send_whatsapp: to=%s has_media=%s client_ready=%s", to, bool(media_url), bool(twilio_client))
     if twilio_client and TWILIO_WHATSAPP_NUMBER:
         kwargs = {
             "from_": TWILIO_WHATSAPP_NUMBER,
@@ -148,9 +133,15 @@ def send_whatsapp(to: str, body: str, media_url: str = None):
         if media_url:
             kwargs["media_url"] = [media_url]
         msg = twilio_client.messages.create(**kwargs)
-        print(f"DEBUG send_whatsapp success: sid={msg.sid}, status={msg.status}", flush=True)
+        logger.debug("send_whatsapp success: sid=%s status=%s", msg.sid, msg.status)
     else:
-        print(f"[WHATSAPP → {to}]\n{body}\nmedia={media_url}\n", flush=True)
+        logger.info("[WHATSAPP → %s]\n%s\nmedia=%s", to, body, media_url)
+
+
+async def send_whatsapp_async(to: str, body: str, media_url: str = None):
+    """Async wrapper that runs the blocking Twilio send in a thread executor."""
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, lambda: send_whatsapp(to, body, media_url=media_url))
 
 # CORE AI LOGIC
 
@@ -170,14 +161,14 @@ async def call_llm_with_mcp(user_text: str, sender_phone: str = "", base64_image
 
     server_params = StdioServerParameters(command="python", args=["main.py"], env=env_vars)
 
-    print("DEBUG LLM: starting stdio_client subprocess...", flush=True)
+    logger.debug("LLM: starting stdio_client subprocess...")
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
-            print("DEBUG LLM: session created, initializing...", flush=True)
+            logger.debug("LLM: session created, initializing...")
             await session.initialize()
-            print("DEBUG LLM: session initialized, listing tools...", flush=True)
+            logger.debug("LLM: session initialized, listing tools...")
             mcp_tools = await session.list_tools()
-            print(f"DEBUG LLM: got {len(mcp_tools.tools)} tools. Calling OpenAI...", flush=True)
+            logger.debug("LLM: got %d tools. Calling OpenAI...", len(mcp_tools.tools))
 
             oai_tools = [
                 {
@@ -214,17 +205,17 @@ async def call_llm_with_mcp(user_text: str, sender_phone: str = "", base64_image
                 tools=oai_tools if oai_tools else None,
                 max_tokens=300
             )
-            print("DEBUG LLM: OpenAI response received.", flush=True)
+            logger.debug("LLM: OpenAI response received.")
 
             msg = response.choices[0].message
 
             if getattr(msg, "tool_calls", None):
                 messages.append(msg)
                 for tc in msg.tool_calls:
-                    print(f"DEBUG LLM: calling tool '{tc.function.name}'...", flush=True)
+                    logger.debug("LLM: calling tool '%s'...", tc.function.name)
                     args = json.loads(tc.function.arguments)
                     result = await session.call_tool(tc.function.name, arguments=args)
-                    print(f"DEBUG LLM: tool '{tc.function.name}' done.", flush=True)
+                    logger.debug("LLM: tool '%s' done.", tc.function.name)
                     result_string = str([item.text for item in result.content]) if hasattr(result, 'content') else str(result)
                     messages.append({
                         "role": "tool",
@@ -237,7 +228,7 @@ async def call_llm_with_mcp(user_text: str, sender_phone: str = "", base64_image
                     model="gpt-4o-mini",
                     messages=messages
                 )
-                print("DEBUG LLM: final response received after tool calls.", flush=True)
+                logger.debug("LLM: final response received after tool calls.")
                 return final_response.choices[0].message.content
 
             return msg.content
@@ -248,22 +239,6 @@ async def call_llm_with_mcp(user_text: str, sender_phone: str = "", base64_image
 async def health_check():
     """Provides a 200 OK status for Render's automated health checks to prevent deployment timeouts."""
     return {"status": "ok", "service": "Spenzo Bot"}
-
-@app.get("/analytics/expenses")
-async def analytics_expenses(phone: str = ""):
-    """
-    Proxy endpoint: fetches expenses for a phone number using server-side Supabase credentials.
-    This prevents exposing the database keys directly to the frontend HTML/JS.
-    """
-    if not sb or not phone:
-        return []
-    clean = phone.strip().replace("whatsapp:", "")
-    # Query both stored formats to handle legacy data
-    r1 = sb.table("expenses").select("id,date,amount,category,subcategory,note,phone_number").eq("phone_number", clean).order("date", desc=True).limit(300).execute()
-    r2 = sb.table("expenses").select("id,date,amount,category,subcategory,note,phone_number").eq("phone_number", f"whatsapp:{clean}").order("date", desc=True).limit(300).execute()
-    merged = (r1.data or []) + (r2.data or [])
-    merged.sort(key=lambda x: x.get("date", ""), reverse=True)
-    return merged
 
 @app.post("/webhook")
 async def twilio_webhook(request: Request):
@@ -276,48 +251,44 @@ async def twilio_webhook(request: Request):
         sender_id = form_data.get("From", "")
         text = form_data.get("Body", "").strip()
         
-        print(f"DEBUG: Webhook received. From: {sender_id}, Body: '{text}'", flush=True)
+        logger.info("Webhook received. From=%s Body=%r", sender_id, text)
 
         # Check if the user sent a photo (receipt)
         num_media = int(form_data.get("NumMedia", "0"))
         media_url = form_data.get("MediaUrl0") if num_media > 0 else None
         
         if media_url:
-            print(f"DEBUG: Media detected: {media_url}", flush=True)
+            logger.debug("Media detected: %s", media_url)
 
         if (text or media_url) and sender_id:
             # GREETING LOGIC: direct synchronous reply
             if is_greeting(text) and not media_url:
-                print(f"DEBUG: *** GREETING DETECTED for {sender_id} ***", flush=True)
+                logger.debug("Greeting detected for %s", sender_id)
                 banner = "https://www.spenzo.xyz/spenzo-banner.png"
-                loop = asyncio.get_event_loop()
                 try:
-                    await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, WELCOME_MESSAGE, media_url=banner))
-                    print(f"DEBUG: Welcome+banner sent OK", flush=True)
+                    await send_whatsapp_async(sender_id, WELCOME_MESSAGE, media_url=banner)
+                    logger.debug("Welcome+banner sent OK")
                 except Exception as e:
-                    print(f"DEBUG: Welcome+banner FAILED ({e}), trying text-only", flush=True)
+                    logger.warning("Welcome+banner failed (%s), trying text-only", e)
                     try:
-                        await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, WELCOME_MESSAGE))
-                        print(f"DEBUG: Text-only welcome sent OK", flush=True)
+                        await send_whatsapp_async(sender_id, WELCOME_MESSAGE)
+                        logger.debug("Text-only welcome sent OK")
                     except Exception as e2:
-                        print(f"DEBUG: Text-only also FAILED: {e2}", flush=True)
+                        logger.error("Text-only welcome also failed: %s", e2)
             else:
                 # NON-GREETING: acknowledge and hand off to background task
-                loop = asyncio.get_event_loop()
                 if not media_url:
-                    await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, "⚡ Got it! Processing..."))
+                    await send_whatsapp_async(sender_id, "⚡ Got it! Processing...")
                 else:
-                    await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, "📸 Received media! Processing receipt..."))
+                    await send_whatsapp_async(sender_id, "📸 Received media! Processing receipt...")
 
-                print("DEBUG: Scheduling background AI task...", flush=True)
+                logger.debug("Scheduling background AI task...")
                 asyncio.create_task(process_message(sender_id, text, media_url=media_url))
         else:
-            print("DEBUG: Empty text and no media — ignoring.", flush=True)
+            logger.debug("Empty text and no media — ignoring.")
 
-    except Exception as top_e:
-        import traceback
-        print(f"DEBUG: TOP-LEVEL WEBHOOK ERROR: {top_e}", flush=True)
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Top-level webhook error")
 
     return Response(content="<Response></Response>", media_type="application/xml")
 
@@ -327,7 +298,7 @@ async def download_twilio_media(url: str) -> str:
     Twilio media URLs redirect to a CDN - follow_redirects=True is essential.
     Falls back to a sync requests call via thread executor if async fails.
     """
-    print(f"DEBUG: Downloading Twilio media from {url}", flush=True)
+    logger.debug("Downloading Twilio media from %s", url)
 
     # --- Attempt 1: async httpx with redirect following ---
     try:
@@ -336,25 +307,23 @@ async def download_twilio_media(url: str) -> str:
             follow_redirects=True  # CRITICAL: Twilio redirects to CDN
         ) as client:
             resp = await client.get(url, auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN))
-            print(f"DEBUG: httpx response status={resp.status_code} final_url={resp.url}", flush=True)
+            logger.debug("httpx response status=%s final_url=%s", resp.status_code, resp.url)
             if resp.status_code == 200 and len(resp.content) > 0:
-                print(f"DEBUG: Download OK via httpx. Size={len(resp.content)} bytes", flush=True)
+                logger.debug("Download OK via httpx. Size=%d bytes", len(resp.content))
                 return base64.b64encode(resp.content).decode("utf-8")
-            else:
-                print(f"DEBUG: httpx got {resp.status_code}, trying fallback...", flush=True)
+            logger.debug("httpx got %s, trying fallback...", resp.status_code)
     except Exception as e:
-        print(f"DEBUG: httpx attempt failed: {e}. Trying sync fallback...", flush=True)
+        logger.debug("httpx attempt failed: %s. Trying sync fallback...", e)
 
     # --- Attempt 2: sync requests via thread executor ---
     def sync_download():
-        import requests
         r = requests.get(
             url,
             auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
             timeout=20,
             allow_redirects=True
         )
-        print(f"DEBUG: requests fallback status={r.status_code}", flush=True)
+        logger.debug("requests fallback status=%s", r.status_code)
         if r.status_code == 200 and len(r.content) > 0:
             return base64.b64encode(r.content).decode("utf-8")
         return None
@@ -363,32 +332,31 @@ async def download_twilio_media(url: str) -> str:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, sync_download)
         if result:
-            print("DEBUG: Download OK via requests fallback.", flush=True)
+            logger.debug("Download OK via requests fallback.")
             return result
     except Exception as e:
-        print(f"DEBUG: requests fallback also failed: {e}", flush=True)
+        logger.warning("requests fallback also failed: %s", e)
 
-    print("DEBUG: All download attempts failed.", flush=True)
+    logger.error("All media download attempts failed for %s", url)
     return None
 
 
 async def process_message(sender_id: str, text: str, media_url: str = None):
-    print(f"DEBUG: process_message started for {sender_id}. Text: '{text}', Media: {media_url}", flush=True)
+    logger.debug("process_message started for %s. Text=%r Media=%s", sender_id, text, media_url)
     base64_img = None
     if media_url:
         base64_img = await download_twilio_media(media_url)
         if base64_img is None:
             # Download failed — tell the user instead of sending a confusing AI reply
-            print("DEBUG: Media download failed, sending error message.", flush=True)
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, lambda: send_whatsapp(
+            logger.warning("Media download failed for %s, sending error message.", sender_id)
+            await send_whatsapp_async(
                 sender_id,
                 "📸 Couldn't read the image (download failed). Please try sending the receipt again!"
-            ))
+            )
             return
 
     try:
-        print("DEBUG: calling call_llm_with_mcp with 45s timeout...", flush=True)
+        logger.debug("calling call_llm_with_mcp with 45s timeout...")
         # If image is present, always prepend the receipt instruction
         effective_text = text
         if base64_img:
@@ -397,17 +365,12 @@ async def process_message(sender_id: str, text: str, media_url: str = None):
             call_llm_with_mcp(effective_text, sender_phone=sender_id, base64_image=base64_img),
             timeout=45.0
         )
-        print(f"DEBUG: AI reply ready. Sending...", flush=True)
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, reply_text))
-        print(f"DEBUG: Response sent to {sender_id}", flush=True)
+        logger.debug("AI reply ready. Sending...")
+        await send_whatsapp_async(sender_id, reply_text)
+        logger.info("Response sent to %s", sender_id)
     except asyncio.TimeoutError:
-        print("DEBUG ERROR: call_llm_with_mcp timed out after 45s!", flush=True)
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, "⏱️ That took too long — please try again!"))
-    except Exception as e:
-        import traceback
-        print(f"DEBUG ERROR in process_message: {e}", flush=True)
-        traceback.print_exc()
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, lambda: send_whatsapp(sender_id, "⚠️ Spenzo hit a snag. Please try again!"))
+        logger.error("call_llm_with_mcp timed out after 45s for %s", sender_id)
+        await send_whatsapp_async(sender_id, "⏱️ That took too long — please try again!")
+    except Exception:
+        logger.exception("Error in process_message for %s", sender_id)
+        await send_whatsapp_async(sender_id, "⚠️ Spenzo hit a snag. Please try again!")

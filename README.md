@@ -9,8 +9,7 @@
 
 **Spenzo** is an advanced, Omni-Chain Financial Superpower. It doesn't just track your fiat expenses: it operates as a consolidated NLP layer to manage your wealth. Monitor live Web3 portfolios, simulate advanced DEX routing quotes, and extract invoice metadata entirely through programmatic chat integrations natively inside WhatsApp and Claude Desktop.
 
-**Website:** [spenzo.xyz](https://www.spenzo.xyz)  
-**Detailed Documentation:** [FEATURES.md](FEATURES.md)
+**Website:** [spenzo.xyz](https://www.spenzo.xyz)
 
 ---
 
@@ -21,7 +20,7 @@
 - **Smart Bill Splitting:** "Dinner was 3000 but we split it 3 ways." Spenzo handles the math and logs your exact share.
 - **Live Crypto Prices:** Built-in real-time CoinGecko integration. Ask "What's the price of SOL?" to log crypto purchases accurately.
 - **Claude Desktop Integration:** Use Spenzo as a native MCP (Model Context Protocol) tool inside Claude for hands-free financial management.
-- **Real-time Dashboard:** View beautiful, mobile-optimized spending charts, category donuts, and transaction histories.
+- **Instant Summaries:** Ask "How much did I spend on food this week?" and Spenzo computes category breakdowns on the fly — right inside Claude or WhatsApp.
 - **Cross-Platform Sync:** Securely link your WhatsApp number to your desktop session via OTP so all your financial data is unified.
 
 ---
@@ -44,7 +43,6 @@ graph TD
 
     %% Database Layer
     Main <-->|CRUD, IOUs, OTP Auth| Supabase[(Supabase PostgreSQL)]
-    Supabase <-->|Real-time Listeners| Vercel[Vercel React Dashboard]
 
     %% External APIs (The Omni-Chain Edge)
     Main -->|Real-time Market Data| CB((Coinbase API))
@@ -56,7 +54,7 @@ graph TD
     classDef primary fill:#a7dd5d,stroke:#000,stroke-width:2px,color:#000
     classDef secondary fill:#1c1c1c,stroke:#fff,stroke-width:1px,color:#fff
     classDef ai fill:#6c47ff,stroke:#fff,stroke-width:2px,color:#fff
-    class UserW,UserD,Vercel primary
+    class UserW,UserD primary
     class Twilio,Claude,Bot,Main,Supabase,CB,Web3,DEX,Fiat secondary
     class LLM ai
 ```
@@ -70,7 +68,7 @@ graph TD
 1. Message **`+1 (415) 523-8886`** on WhatsApp.
 2. Send the exact phrase `join conversation-heading` to enter the secure Twilio sandbox.
 3. Say "Hi" to see what Spenzo can do!
-4. Check your personal data at [spenzo.xyz/analytics](https://www.spenzo.xyz/analytics).
+4. Ask "How much did I spend this week?" for an instant summary.
 
 > **Note:** The backend sleeps on Render's free tier. Your very first message might take ~45 seconds while the server wakes up. Consecutive messages are instant.
 
@@ -80,8 +78,8 @@ Since Spenzo is an MCP Server, it must attach to a client like Claude Desktop. C
 
 #### 1. Download the App for Mac/Windows (No Coding Required)
 You can distribute Spenzo as a single, zero-dependency executable. No source code or environment setup required.
-1. Download the compiled `spenzo-mac` or `spenzo-win.exe` binary:
-   👉 **[Download Spenzo Binaries (Google Drive)](https://drive.google.com/drive/folders/1hJIwEehKF4R0T--kcmxNspcS11a5qXkg?usp=share_link)**
+1. Download the compiled `spenzo-mac` or `spenzo-win.exe` binary from the latest GitHub Release:
+   👉 **[Download Spenzo Binaries (GitHub Releases)](https://github.com/Arav-Arun/Spenzo/releases/latest)**
 2. Edit your `claude_desktop_config.json`:
    ```json
    "mcpServers": {
@@ -152,7 +150,7 @@ Developers can utilize the following database tools via `main.py`:
 | --------------------------------- | -------------------------------------------------------------- |
 | `add_expense`                     | Log a new expense (date, amount, category, subcategory, note). |
 | `list_expenses`                   | Fetch chronological expense entries within a date range.       |
-| `summarize`                       | Generate category-based spending totals for KPI dashboards.    |
+| `summarize`                       | Generate category-based spending totals and breakdowns.    |
 | `search_expenses`                 | Keyword search across all categories, subcategories, or notes. |
 | `edit_expense` / `delete_expense` | Modify or remove specific transaction rows securely.           |
 | `get_crypto_price`                | Fetch live USD/INR prices for seamless crypto logging.         |
