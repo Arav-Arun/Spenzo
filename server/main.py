@@ -232,7 +232,7 @@ def verify_phone(phone_number: str, code: str):
     supabase.table("verifications").update({"is_verified": True}).eq("phone_number", phone_number).execute()
 
     # Write LINKED_PHONE into local .env so future sessions remember it
-    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
     lines = open(env_path).readlines() if os.path.exists(env_path) else []
     lines = [l for l in lines if not l.startswith("LINKED_PHONE")]
     lines.append(f'LINKED_PHONE="{phone_number}"\n')

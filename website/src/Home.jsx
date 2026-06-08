@@ -274,7 +274,7 @@ export default function Home() {
     "command": "uv",
     "args": [
       "run", "fastmcp", "run",
-      "/PATH/TO/Spenzo/main.py"
+      "/PATH/TO/Spenzo/server/main.py"
     ]
   }
 }`}

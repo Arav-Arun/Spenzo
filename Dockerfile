@@ -24,4 +24,4 @@ COPY . .
 EXPOSE 8000
 
 # Start the FastAPI bot — reads $PORT from environment (set by Render)
-CMD ["sh", "-c", "uv run uvicorn bot:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uv run uvicorn server.bot:app --host 0.0.0.0 --port ${PORT:-8000}"]

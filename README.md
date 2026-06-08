@@ -133,7 +133,7 @@ Spenzo's `main.py` detects cloud environments automatically and starts a Server-
      "mcpServers": {
        "spenzo": {
          "command": "uv",
-         "args": ["run", "fastmcp", "run", "/ABSOLUTE/PATH/TO/Spenzo/main.py"]
+         "args": ["run", "fastmcp", "run", "/ABSOLUTE/PATH/TO/Spenzo/server/main.py"]
        }
      }
    }
@@ -144,7 +144,7 @@ Spenzo's `main.py` detects cloud environments automatically and starts a Server-
 
 ## Available MCP Tools
 
-Developers can utilize the following database tools via `main.py`:
+Developers can utilize the following database tools via `server/main.py`:
 
 | Tool                              | Description                                                    |
 | --------------------------------- | -------------------------------------------------------------- |

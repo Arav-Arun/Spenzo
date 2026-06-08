@@ -159,7 +159,8 @@ async def call_llm_with_mcp(user_text: str, sender_phone: str = "", base64_image
     if clean_phone:
         env_vars["LINKED_PHONE"] = clean_phone
 
-    server_params = StdioServerParameters(command="python", args=["main.py"], env=env_vars)
+    main_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main.py")
+    server_params = StdioServerParameters(command="python", args=[main_py], env=env_vars)
 
     logger.debug("LLM: starting stdio_client subprocess...")
     async with stdio_client(server_params) as (read, write):
