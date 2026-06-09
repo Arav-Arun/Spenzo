@@ -28,7 +28,8 @@ wheels/
 website/node_modules/
 website/dist/
 
-# Lock files (keep uv.lock, ignore package-lock)
+# Lock files
+uv.lock
 website/package-lock.json
 
 # IDE
