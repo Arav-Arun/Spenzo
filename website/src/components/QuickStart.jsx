@@ -79,9 +79,9 @@ export default function QuickStart() {
                       <a href="https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-mac" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-black bg-[#a7dd5d] py-2 px-5 rounded font-semibold hover:bg-white transition-colors">
                           <Download size={18} /> Download Mac Binary
                       </a>
-                      <span className="inline-flex items-center gap-2 text-sm text-neutral-500 bg-[#1c1c1c] border border-white/10 py-2 px-5 rounded font-semibold cursor-not-allowed opacity-60">
-                          <Download size={18} /> Windows .exe (Coming Soon)
-                      </span>
+                      <a href="https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-win.exe" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-neutral-300 bg-[#1c1c1c] border border-white/10 py-2 px-5 rounded font-semibold hover:bg-[#a7dd5d] hover:text-black hover:border-[#a7dd5d] transition-colors">
+                          <Download size={18} /> Download Windows .exe
+                      </a>
                     </div>
                   </div>
                </div>
