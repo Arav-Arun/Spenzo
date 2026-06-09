@@ -82,16 +82,17 @@ flowchart TD
 
 Since Spenzo is an MCP Server, it must attach to a client like Claude Desktop. Choose the right method for you:
 
-#### 1. Download the App for Mac/Windows (No Coding Required)
-You can distribute Spenzo as a single, zero-dependency executable. No source code or environment setup required.
-1. Download the compiled `spenzo-mac` or `spenzo-win.exe` binary from the latest GitHub Release:
-   👉 **[Download Spenzo Binaries (GitHub Releases)](https://github.com/Arav-Arun/Spenzo/releases/latest)**
+#### 1. Download the App for Mac (No Coding Required)
+You can run Spenzo as a single, zero-dependency executable. No source code or environment setup required.
+1. Download the compiled `spenzo-mac` binary from the latest GitHub Release:
+   👉 **[Download Spenzo for Mac](https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-mac)**
+   > Windows `.exe` coming soon.
 2. Edit your `claude_desktop_config.json`:
    ```json
    "mcpServers": {
      "spenzo": {
-       "command": "/Users/YOUR_NAME/Desktop/spenzo-mac", // or spenzo-win.exe
-       "env": { "SUPABASE_URL": "...", "OPENAI_API_KEY": "..." }
+       "command": "/Users/YOUR_NAME/Desktop/spenzo-mac",
+       "env": { "SUPABASE_URL": "...", "SUPABASE_KEY": "..." }
      }
    }
    ```
