@@ -140,7 +140,7 @@ def send_whatsapp(to: str, body: str, media_url: str = None):
 
 async def send_whatsapp_async(to: str, body: str, media_url: str = None):
     """Async wrapper that runs the blocking Twilio send in a thread executor."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, lambda: send_whatsapp(to, body, media_url=media_url))
 
 # CORE AI LOGIC
@@ -154,8 +154,13 @@ async def call_llm_with_mcp(user_text: str, sender_phone: str = "", base64_image
         system += f"\n\nUSER PHONE NUMBER: {clean_phone} - ALWAYS pass this as phone_number when calling ANY tool."
         system += f"\n\nCRYPTO/WEB3 HINT: If the user asks about linking their Metamask, Solana, or Ethereum wallet, use the `analyze_web3_wallet` tool."
 
-    env_vars = {k: v for k, v in os.environ.items()}
-    env_vars.pop("PORT", None)
+    # Pass only required env vars to the MCP subprocess (avoid leaking the full environment)
+    _needed_keys = [
+        "SUPABASE_URL", "SUPABASE_KEY", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN",
+        "TWILIO_WHATSAPP_NUMBER", "ALCHEMY_API_KEY", "HELIUS_API_KEY",
+        "PATH", "HOME", "VIRTUAL_ENV",
+    ]
+    env_vars = {k: os.environ[k] for k in _needed_keys if k in os.environ}
     if clean_phone:
         env_vars["LINKED_PHONE"] = clean_phone
 
@@ -330,7 +335,7 @@ async def download_twilio_media(url: str) -> str:
         return None
 
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(None, sync_download)
         if result:
             logger.debug("Download OK via requests fallback.")

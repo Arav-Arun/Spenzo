@@ -313,7 +313,7 @@ def analyze_web3_wallet(wallet_address: str) -> str:
                 total_inr = crypto_amount * price_inr
                 report.append(f"\nNet Worth: ~${total_usd:,.2f} USD (₹{total_inr:,.0f} INR)")
                 
-        return "\\n".join(report)
+        return "\n".join(report)
         
     except Exception as e:
         return f"Error analyzing {chain} wallet: {str(e)}"
@@ -342,22 +342,22 @@ def simulate_dex_swap(token_in: str, token_out: str, amount: float) -> str:
             out_final = out_amount_raw / (10 ** out_decimals)
             execution_url = f"https://jup.ag/swap/{token_in}-{token_out}?inAmount={amount}"
             return (
-                f"💱 **Live Swap Quote & Execution**\\n"
-                f"Routing {amount} {token_in.upper()} secures exactly **{out_final:.4f} {token_out.upper()}**.\\n"
-                f"(Route: {len(resp.get('routePlan', []))} hops, ~0.5% slippage tolerance).\\n\\n"
-                f"⚡ **1-Click Execution Dispatch:**\\n"
-                f"Approve and execute this exact transaction instantly on your wallet:\\n"
+                f"💱 **Live Swap Quote & Execution**\n"
+                f"Routing {amount} {token_in.upper()} secures exactly **{out_final:.4f} {token_out.upper()}**.\n"
+                f"(Route: {len(resp.get('routePlan', []))} hops, ~0.5% slippage tolerance).\n\n"
+                f"⚡ **1-Click Execution Dispatch:**\n"
+                f"Approve and execute this exact transaction instantly on your wallet:\n"
                 f"🔗 {execution_url}"
             )
-        except:
+        except Exception:
             pass
     
     execution_url = f"https://jup.ag/swap/{token_in.upper()}-{token_out.upper()}?inAmount={amount}"
     return (
-        f"💱 **Live Swap Dispatch**\\n"
-        f"Swapping {amount} {token_in.upper()} for {token_out.upper()} is ready at standard market rates.\\n\\n"
-        f"⚡ **1-Click Execution Dispatch:**\\n"
-        f"Click below to securely sign the transaction in your mobile/web wallet:\\n"
+        f"💱 **Live Swap Dispatch**\n"
+        f"Swapping {amount} {token_in.upper()} for {token_out.upper()} is ready at standard market rates.\n\n"
+        f"⚡ **1-Click Execution Dispatch:**\n"
+        f"Click below to securely sign the transaction in your mobile/web wallet:\n"
         f"🔗 {execution_url}"
     )
 
@@ -376,13 +376,13 @@ def analyze_gas_burn(wallet_address: str) -> str:
                 total_gas_wei = sum(int(tx.get("gasUsed", 0)) * int(tx.get("gasPrice", 0)) for tx in txs if tx.get("from", "").lower() == wallet_address.lower())
                 total_eth = total_gas_wei / 1e18
                 return (
-                    f"🔥 **Real Gas Burn Analyzer** ({chain})\\n"
-                    f"Wallet: {wallet_address[:6]}...{wallet_address[-4:]}\\n\\n"
-                    f"Scanned last {len(txs)} on-chain transactions:\\n"
+                    f"🔥 **Real Gas Burn Analyzer** ({chain})\n"
+                    f"Wallet: {wallet_address[:6]}...{wallet_address[-4:]}\n\n"
+                    f"Scanned last {len(txs)} on-chain transactions:\n"
                     f"- Total Gas Fees Paid: **{total_eth:.5f} ETH**"
                 )
             return "Could not fetch Ethereum transactions from Etherscan."
-            
+
         elif chain == "Solana":
             helius_key = os.environ.get("HELIUS_API_KEY", "")
             url = f"https://api.helius.xyz/v0/addresses/{wallet_address}/transactions?api-key={helius_key}"
@@ -392,9 +392,9 @@ def analyze_gas_burn(wallet_address: str) -> str:
                 total_lamports = sum(tx.get("fee", 0) for tx in txs if tx.get("feePayer", "") == wallet_address)
                 total_sol = total_lamports / 1e9
                 return (
-                    f"🔥 **Real Gas Burn Analyzer** ({chain})\\n"
-                    f"Wallet: {wallet_address[:6]}...{wallet_address[-4:]}\\n\\n"
-                    f"Scanned last {len(txs)} on-chain transactions:\\n"
+                    f"🔥 **Real Gas Burn Analyzer** ({chain})\n"
+                    f"Wallet: {wallet_address[:6]}...{wallet_address[-4:]}\n\n"
+                    f"Scanned last {len(txs)} on-chain transactions:\n"
                     f"- Total Gas Fees Paid: **{total_sol:.5f} SOL**"
                 )
             return f"Error fetching Solana transactions: {resp.status_code}"
@@ -430,8 +430,8 @@ def check_staking_yield(wallet_address: str) -> str:
                     summary.append(f"- **{balance:.4f} {symbol}** (Active APY: ~3.2%)")
             
             if not summary:
-                return f"🔍 **Staking Analyzer** ({chain})\\nNo common liquid staking positions (stETH/rETH) detected in this wallet."
-            return f"🚜 **Active Staking Positions** ({chain})\\n" + "\\n".join(summary)
+                return f"🔍 **Staking Analyzer** ({chain})\nNo common liquid staking positions (stETH/rETH) detected in this wallet."
+            return f"🚜 **Active Staking Positions** ({chain})\n" + "\n".join(summary)
 
         elif chain == "Solana":
             helius_key = os.environ.get("HELIUS_API_KEY", "")
@@ -465,9 +465,9 @@ def check_staking_yield(wallet_address: str) -> str:
                 summary.append(f"- **{total_lamports/1e9:.4f} SOL** in Native Stake Accounts")
 
             if not summary:
-                return f"🔍 **Staking Analyzer** ({chain})\\nNo JitoSOL or Native Stake Accounts detected."
-            return f"🚜 **Active Staking Positions** ({chain})\\n" + "\\n".join(summary)
-            
+                return f"🔍 **Staking Analyzer** ({chain})\nNo JitoSOL or Native Stake Accounts detected."
+            return f"🚜 **Active Staking Positions** ({chain})\n" + "\n".join(summary)
+
     except Exception as e:
         return f"Error analyzing {chain} staking: {str(e)}"
 
@@ -487,11 +487,11 @@ def generate_upi_payment_link(upi_id: str, amount: float, payee_name: str = "Spe
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(upi_url)}"
     
     return (
-        f"💳 **Dynamic UPI Payment Dispatched!**\\n\\n"
-        f"To collect {amount} INR for '{note}', send this exact link to the debtor:\\n"
-        f"🔗 `{upi_url}`\\n\\n"
-        f"📷 Or send them this scannable QR Code URL:\\n{qr_url}\\n\\n"
-        f"*(Note: The 'upi://pay' deep link will instantly open their native banking app on mobile).* "
+        f"💳 **Dynamic UPI Payment Dispatched!**\n\n"
+        f"To collect {amount} INR for '{note}', send this exact link to the debtor:\n"
+        f"🔗 `{upi_url}`\n\n"
+        f"📷 Or send them this scannable QR Code URL:\n{qr_url}\n\n"
+        f"*(Note: The 'upi://pay' deep link will instantly open their native banking app on mobile).*"
     )
 
 @mcp.tool()
@@ -513,27 +513,27 @@ def list_debts(upi_id: str = "", phone_number: str = "") -> str:
     if not res.data:
         return "You have no outstanding debts! Nobody owes you money right now."
         
-    report = ["💸 **Your Outstanding Receivables (The Splitwise Ledger):**\\n"]
-    
+    report = ["💸 **Your Outstanding Receivables (The Splitwise Ledger):**\n"]
+
     if not upi_id:
         for row in res.data:
             debtor = row['subcategory']
             amt = row['amount']
             reason = row['note']
             report.append(f"- **{debtor}** owes you **₹{amt}** for '{reason}'.")
-        report.append("\\n⚠️ **Action Required**: To generate 1-click UPI collection links for these debts, please reply with your UPI ID (e.g., name@okicici).")
+        report.append("\n⚠️ **Action Required**: To generate 1-click UPI collection links for these debts, please reply with your UPI ID (e.g., name@okicici).")
     else:
         for row in res.data:
             debtor = row['subcategory']
             amt = row['amount']
             reason = row['note']
-            
+
             # Auto-generate dynamic real UPI collect link
             upi_url = f"upi://pay?pa={upi_id}&pn=SpenzoUser&am={amt}&cu=INR&tn={urllib.parse.quote(reason)}"
             report.append(f"- **{debtor}** owes you **₹{amt}** for '{reason}'.")
-            report.append(f"  🔗 1-Click Auto-Collect: `{upi_url}`\\n")
-        
-    return "\\n".join(report)
+            report.append(f"  🔗 1-Click Auto-Collect: `{upi_url}`\n")
+
+    return "\n".join(report)
 
 @mcp.tool()
 def get_crypto_price(ticker: str) -> str:
