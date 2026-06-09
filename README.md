@@ -30,33 +30,39 @@
 Spenzo uses a modern, serverless-friendly microservice architecture:
 
 ```mermaid
-graph TD
-    %% User Interfaces
-    UserW[User Mobile] <-->|WhatsApp Text & Media| Twilio[Twilio Webhooks]
-    UserD[Desktop User] <-->|Natural Language| Claude[Claude Desktop MCP]
+flowchart TD
+    %% ── Client Layer ──
+    WA["📱 WhatsApp User"] <-->|"Text · Receipts · Images"| TW["Twilio WhatsApp API"]
+    CD["🖥️ Claude Desktop"] <-->|"FastMCP Protocol<br/>(stdio / SSE)"| MCP
 
-    %% Core Infrastructure
-    Twilio <--> Bot[bot.py: FastAPI Agentic Webhook]
-    Bot <-->|OpenAI SDK| LLM((GPT-4o-mini & Vision))
-    Claude <-->|FastMCP Protocol| Main[main.py: Spenzo MCP Server]
-    Bot <-->|Internal Tool Calling| Main
+    %% ── WhatsApp Pipeline ──
+    TW -->|"POST /webhook"| BOT["bot.py<br/>FastAPI Webhook Server"]
+    BOT -->|"Reply Message"| TW
+    BOT <-->|"Chat Completions<br/>+ Tool Use"| LLM(("GPT-4o-mini<br/>+ Vision"))
+    BOT <-->|"stdio subprocess<br/>(MCP Client → Server)"| MCP["main.py<br/>FastMCP Server · 16 Tools"]
 
-    %% Database Layer
-    Main <-->|CRUD, IOUs, OTP Auth| Supabase[(Supabase PostgreSQL)]
+    %% ── Database ──
+    MCP <-->|"CRUD · IOUs · OTP Auth"| DB[("Supabase<br/>PostgreSQL")]
 
-    %% External APIs (The Omni-Chain Edge)
-    Main -->|Real-time Market Data| CB((Coinbase API))
-    Main -->|Web3 Wallet Snapshots| Web3((Alchemy / Helius RPCs))
-    Main -->|1-Click Token Swaps| DEX((Jupiter v6 DEX API))
-    Main -->|Dynamic Debt Collection| Fiat((UPI Intent Generator))
+    %% ── External APIs ──
+    MCP -->|"Live Prices"| CB["Coinbase · CoinGecko"]
+    MCP -->|"Wallet · Gas · Staking"| W3["Alchemy · Helius · Blockscout"]
+    MCP -->|"Swap Routing"| JUP["Jupiter v6 DEX"]
+    MCP -->|"Payment Links"| UPI["UPI Intent + QR Generator"]
+    MCP -.->|"OTP Delivery"| TW
 
-    %% Formatting
-    classDef primary fill:#a7dd5d,stroke:#000,stroke-width:2px,color:#000
-    classDef secondary fill:#1c1c1c,stroke:#fff,stroke-width:1px,color:#fff
+    %% ── Styles ──
+    classDef client fill:#a7dd5d,stroke:#000,stroke-width:2px,color:#000
+    classDef infra fill:#1c1c1c,stroke:#fff,stroke-width:1px,color:#fff
     classDef ai fill:#6c47ff,stroke:#fff,stroke-width:2px,color:#fff
-    class UserW,UserD primary
-    class Twilio,Claude,Bot,Main,Supabase,CB,Web3,DEX,Fiat secondary
+    classDef db fill:#3ECF8E,stroke:#000,stroke-width:2px,color:#000
+    classDef api fill:#2d2d2d,stroke:#555,stroke-width:1px,color:#ccc
+
+    class WA,CD client
+    class TW,BOT,MCP infra
     class LLM ai
+    class DB db
+    class CB,W3,JUP,UPI api
 ```
 
 ---
