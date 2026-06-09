@@ -29,11 +29,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pyinstaller
-          pip install -r <(python -c "
-          import tomllib, pathlib
-          p = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
-          print('\n'.join(p['project']['dependencies']))
-          ")
+          python -c "import tomllib, pathlib; p = tomllib.loads(pathlib.Path('pyproject.toml').read_text()); print('\n'.join(p['project']['dependencies']))" > _deps.txt
+          pip install -r _deps.txt
         shell: bash
 
       - name: Build binary
