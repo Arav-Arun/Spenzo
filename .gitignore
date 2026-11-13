@@ -27,6 +27,7 @@ wheels/
 # Node / Website build outputs
 website/node_modules/
 website/dist/
+website/.npm-cache/
 
 # Lock files
 uv.lock
@@ -43,3 +44,5 @@ FEATURES.md
 sse_relay.py
 build_binary.sh
 website/README.md
+.neon
+node_modules/

@@ -1,189 +1,129 @@
-# Spenzo : The Omni-Chain Financial Superpower
+# Spenzo · your money buddy on WhatsApp
 
-![Spenzo Banner](website/public/spenzo-banner.png)
+![Spenzo: just text your money](website/public/og.png)
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![MCP](https://img.shields.io/badge/MCP-Compatible-brightgreen.svg)](https://modelcontextprotocol.io/)
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)](https://supabase.com/)
+**Just text your money.** Spenzo is a money buddy that lives in WhatsApp. Track what you spend, split bills with friends, save for goals and keep an eye on your investments, all by chatting. No app, no forms, no passwords: your WhatsApp number is your account. It also plugs into Claude, ChatGPT and Cursor over MCP.
 
-**Spenzo** is an advanced, Omni-Chain Financial Superpower. It doesn't just track your fiat expenses: it operates as a consolidated NLP layer to manage your wealth. Monitor live Web3 portfolios, simulate advanced DEX routing quotes, and extract invoice metadata entirely through programmatic chat integrations natively inside WhatsApp and Claude Desktop.
+[spenzo.aravarun.in](https://www.spenzo.aravarun.in)
 
-**Website:** [spenzo.xyz](https://www.spenzo.xyz)
+```
+You     chai 20
+Spenzo  ✅ ₹20 · Chai / Food & Dining            [↩️ Undo] [✏️ Edit] [📊 This month]
 
----
+You     dinner 3000 split with Arav and Riya
+Spenzo  ✅ ₹1,000 · Dinner / Food & Dining
+        Arav and Riya owe you ₹1,000 each 🤝
 
-## Features
-
-- **WhatsApp Native:** Text your expenses naturally ("Spent ₹150 on chai"). Spenzo auto-categorizes and logs them instantly.
-- **Receipt Vision:** Snap a photo of a bill or receipt on WhatsApp. Spenzo extracts the merchant, total, and date automatically using GPT-4o.
-- **Smart Bill Splitting:** "Dinner was 3000 but we split it 3 ways." Spenzo handles the math and logs your exact share.
-- **Live Crypto Prices:** Built-in real-time CoinGecko integration. Ask "What's the price of SOL?" to log crypto purchases accurately.
-- **Claude Desktop Integration:** Use Spenzo as a native MCP (Model Context Protocol) tool inside Claude for hands-free financial management.
-- **Instant Summaries:** Ask "How much did I spend on food this week?" and Spenzo computes category breakdowns on the fly — right inside Claude or WhatsApp.
-- **Cross-Platform Sync:** Securely link your WhatsApp number to your desktop session via OTP so all your financial data is unified.
-
----
-
-## Architecture
-
-Spenzo uses a modern, serverless-friendly microservice architecture:
-
-```mermaid
-flowchart TD
-    %% ── Client Layer ──
-    WA["📱 WhatsApp User"] <-->|"Text · Receipts · Images"| TW["Twilio WhatsApp API"]
-    CD["🖥️ Claude Desktop"] <-->|"FastMCP Protocol<br/>(stdio / SSE)"| MCP
-
-    %% ── WhatsApp Pipeline ──
-    TW -->|"POST /webhook"| BOT["bot.py<br/>FastAPI Webhook Server"]
-    BOT -->|"Reply Message"| TW
-    BOT <-->|"Chat Completions<br/>+ Tool Use"| LLM(("GPT-4o-mini<br/>+ Vision"))
-    BOT <-->|"stdio subprocess<br/>(MCP Client → Server)"| MCP["main.py<br/>FastMCP Server · 16 Tools"]
-
-    %% ── Database ──
-    MCP <-->|"CRUD · IOUs · OTP Auth"| DB[("Supabase<br/>PostgreSQL")]
-
-    %% ── External APIs ──
-    MCP -->|"Live Prices"| CB["Coinbase · CoinGecko"]
-    MCP -->|"Wallet · Gas · Staking"| W3["Alchemy · Helius · Blockscout"]
-    MCP -->|"Swap Routing"| JUP["Jupiter v6 DEX"]
-    MCP -->|"Payment Links"| UPI["UPI Intent + QR Generator"]
-    MCP -.->|"OTP Delivery"| TW
-
-    %% ── Styles ──
-    classDef client fill:#a7dd5d,stroke:#000,stroke-width:2px,color:#000
-    classDef infra fill:#1c1c1c,stroke:#fff,stroke-width:1px,color:#fff
-    classDef ai fill:#6c47ff,stroke:#fff,stroke-width:2px,color:#fff
-    classDef db fill:#3ECF8E,stroke:#000,stroke-width:2px,color:#000
-    classDef api fill:#2d2d2d,stroke:#555,stroke-width:1px,color:#ccc
-
-    class WA,CD client
-    class TW,BOT,MCP infra
-    class LLM ai
-    class DB db
-    class CB,W3,JUP,UPI api
+You     salary aaya 60k
+Spenzo  💸 Salary logged!
+        Payday! Move ₹7,500 to Goa trip? That keeps it on track.   [Move ₹7,500] [Not now]
 ```
 
 ---
 
-## QuickStart Guide
+## What it does
 
-### 1. Try the WhatsApp Bot
+| | You say | Spenzo |
+| --- | --- | --- |
+| **Spend** | "uber 260", a photo of a bill, a voice note | Logs it with a category, converts foreign money at the live rate, tags merchants and trips |
+| | "keep food under 6k" | Monthly budget; warns at 80%, at 100%, and if you're spending too fast |
+| **Split** | "dinner 3000 split with Arav and Riya" | Logs your share and what each friend owes, in both directions |
+| | "who owes me?" → your UPI ID | A tap-to-pay link per person ([`/pay`](website/src/pages/Pay.jsx)) to forward |
+| **Save** | "Goa trip 30k by March" | A goal with the monthly amount needed; offers to top it up on payday |
+| | a screenshot of Groww/Zerodha holdings | Stocks, mutual funds and crypto wallets at live prices, plus net worth |
+| **See** | "where did my money go?", "can I afford a 40k phone?" | Straight answers from your real numbers, in English, Hinglish or Hindi |
+| | tap 📊 | Your dashboard, already signed in |
+| **Your AI** | "connect ai" | A private link that adds Spenzo to Claude, ChatGPT or Cursor |
 
-1. Message **`+1 (415) 523-8886`** on WhatsApp.
-2. Send the exact phrase `join conversation-heading` to enter the secure Twilio sandbox.
-3. Say "Hi" to see what Spenzo can do!
-4. Ask "How much did I spend this week?" for an instant summary.
+**Design rules that keep it simple**
+- One thing to learn: tell it what you spent. Other features are offered once, when they become useful.
+- At most 3 lines, 1 suggestion and 3 buttons per reply. Undo instead of "are you sure?".
+- Button taps (Undo, This month, Set budget…) are answered instantly without calling the AI.
+- Nudges only ride on replies to something you just did, once per month each. "stop nudges" turns them off.
+- Investments get facts (value, gains, concentration), never buy/sell tips.
 
-> **Note:** The backend sleeps on Render's free tier. Your very first message might take ~45 seconds while the server wakes up. Consecutive messages are instant.
+## How it works
 
-### 2. Connect to Claude Desktop (3 Options)
+```mermaid
+flowchart LR
+    WA["📱 WhatsApp"] -->|"signed webhook"| BOT["bot.py · FastAPI"]
+    AI["🤖 Claude · ChatGPT · Cursor"] -->|"MCP over HTTP, personal key"| MCP["main.py · /mcp"]
+    WEB["🌐 spenzo.aravarun.in/app"] -->|"magic-link session"| API["api.py"]
+    BOT --> CONV["conversation.py"]
+    CONV -->|"button taps"| REPLIES["replies.py · no AI"]
+    CONV -->|"text · photo · voice"| AGENT["agent.py · GPT tool loop"]
+    AGENT --> TOOLS["tools.py"]
+    MCP --> TOOLS
+    API --> TOOLS
+    TOOLS --> SPEND["spend.py"] & SPLIT["split.py"] & SAVE["save.py"] & PROFILE["profile.py"]
+    SPEND & SPLIT & SAVE & PROFILE --> DB[("Postgres · Neon")]
+    SAVE --> MARKETS["markets.py · Coinbase · Yahoo · mfapi.in · Alchemy · Helius"]
+```
 
-Since Spenzo is an MCP Server, it must attach to a client like Claude Desktop. Choose the right method for you:
+- **One set of tools, three front doors.** WhatsApp calls the tool functions in-process; AI apps reach the same functions over MCP; the dashboard reads them through a small API. Tool schemas are generated from the Python signatures.
+- **Users can't reach each other's data.** Tools never take a user argument. The sender's number (WhatsApp), session (dashboard) or personal key (MCP) sets the user for the request, and every SQL query filters on it.
+- **Passwordless.** Dashboard links carry a 15-minute HMAC-signed token in the URL fragment, swapped for a 30-day session. AI links carry a 1-year key. "Sign me out everywhere" revokes all of them at once.
+- **Plain SQL on Postgres.** One small [`db.py`](server/db.py) over psycopg; totals are computed in the database. Works on Neon, Supabase or any Postgres.
+- **WhatsApp Cloud API, direct.** Signature-checked webhooks, duplicate-delivery protection, typing indicator, reply buttons, link buttons and image headers. Replies to users are free.
 
-#### 1. Download the App for Mac/Windows (No Coding Required)
-You can run Spenzo as a single, zero-dependency executable. No source code or environment setup required.
-1. Download the compiled binary for your platform from the latest GitHub Release:
-   - 👉 **[Download for Mac](https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-mac)**
-   - 👉 **[Download for Windows](https://github.com/Arav-Arun/Spenzo/releases/latest/download/spenzo-win.exe)**
-2. Edit your `claude_desktop_config.json`:
-   ```json
-   "mcpServers": {
-     "spenzo": {
-       "command": "/Users/YOUR_NAME/Desktop/spenzo-mac",
-       "env": { "SUPABASE_URL": "...", "SUPABASE_KEY": "..." }
-     }
-   }
-   ```
-
-#### 2. Cloud API (Zero Local Compute)
-Spenzo's `main.py` detects cloud environments automatically and starts a Server-Sent Events (SSE) listener. 
-1. Run Spenzo on Render/AWS.
-2. Download the tiny `sse_relay.py` connection script to your Desktop.
-3. Edit your `claude_desktop_config.json`:
-   ```json
-   "mcpServers": {
-     "spenzo-cloud": {
-       "command": "python",
-       "args": ["/Users/YOUR_NAME/Desktop/sse_relay.py", "https://YOUR-RENDER-URL.onrender.com/sse"]
-     }
-   }
-   ```
-
-#### 3. From Source (For Developers)
-
-**Prerequisites:** Python 3.11+ and the [`uv`](https://github.com/astral-sh/uv) package manager.
-
-1. **Clone & Install:**
-   ```bash
-   git clone https://github.com/Arav-Arun/Spenzo.git
-   cd Spenzo
-   uv sync
-   ```
-2. **Environment Variables:**
-   Create a `.env` file in the root directory:
-   ```env
-   SUPABASE_URL="https://your-project.supabase.co"
-   SUPABASE_KEY="your-service-role-key"
-   OPENAI_API_KEY="sk-..."
-   TWILIO_ACCOUNT_SID="ACxxx..."
-   TWILIO_AUTH_TOKEN="your-auth-token"
-   TWILIO_WHATSAPP_NUMBER="whatsapp:+14155238886"
-   ALCHEMY_API_KEY="your-alchemy-key"
-   HELIUS_API_KEY="your-helius-key"
-   ```
-3. **Link to Claude Desktop:**
-   Open your Claude Desktop config file and add:
-   ```json
-   {
-     "mcpServers": {
-       "spenzo": {
-         "command": "uv",
-         "args": ["run", "fastmcp", "run", "/ABSOLUTE/PATH/TO/Spenzo/server/main.py"]
-       }
-     }
-   }
-   ```
-   Restart Claude, and you can now ask Claude to manage your expenses!
+```
+server/
+  core.py          settings, current user, dates
+  db.py            Postgres helpers (rows, row, value, execute, transaction)
+  spend.py         expenses, income, budgets
+  split.py         debts both ways, UPI pay links
+  save.py          goals, investments, net worth
+  markets.py       FX, NSE/BSE stocks, mutual fund NAVs, crypto wallets (cached 15 min)
+  profile.py       name, long-term facts, chat memory, delete-my-data
+  nudges.py        one well-timed nudge per reply, recorded once per month
+  replies.py       reply format (text + buttons/link) and every no-AI reply
+  agent.py         prompt, tool loop, voice transcription
+  conversation.py  one message in, replies out
+  whatsapp.py      Cloud API: parse, send, typing, media
+  bot.py           the server: webhook, dashboard API (api.py), MCP at /mcp (main.py)
+  auth.py          signed links; account.py links a local Claude Desktop
+  chat.py          terminal simulator; localdb.py throwaway Postgres for tests
+scripts/           setup_db.py · dev.sh (local bot + tunnel) · import_v1.py (move v1 data)
+tests/             pytest on a real embedded Postgres; no network
+website/           Vite + React + Tailwind: landing, /app dashboard, /connect, /pay, /privacy
+schema.sql         the tables
+brand/             Baaz the mascot: original art and the prompts that made it
+```
 
 ---
 
-## Available MCP Tools
+## Run it locally
 
-Developers can utilize the following database tools via `server/main.py`:
+Needs Python 3.11+, [uv](https://github.com/astral-sh/uv) and Node 22.
 
-| Tool                              | Description                                                    |
-| --------------------------------- | -------------------------------------------------------------- |
-| `add_expense`                     | Log a new expense (date, amount, category, subcategory, note). |
-| `list_expenses`                   | Fetch chronological expense entries within a date range.       |
-| `summarize`                       | Generate category-based spending totals and breakdowns.    |
-| `search_expenses`                 | Keyword search across all categories, subcategories, or notes. |
-| `edit_expense` / `delete_expense` | Modify or remove specific transaction rows securely.           |
-| `get_crypto_price`                | Fetch live USD/INR prices for seamless crypto logging.         |
-| `register_phone` / `verify_phone` | Issue and verify Twilio OTPs to securely bridge platforms.     |
+```bash
+uv sync
+cp .env.example .env              # OPENAI_API_KEY is enough for the simulator
+uv run python -m server.chat --memory
+```
+
+A WhatsApp-style chat in your terminal on a throwaway database: buttons show as `[1] [2] [3]`, and `/photo bill.jpg` or `/voice note.ogg` send media.
+
+```bash
+uv run pytest                     # 38 tests on an embedded Postgres, nothing to install
+cd website && npm install && npm run dev
+```
+
+To try it on real WhatsApp before deploying, fill in `.env` and run `./scripts/dev.sh`. It starts the bot, opens a public tunnel and prints the webhook URL to paste into Meta.
+
+## Deploy (free tiers)
+
+1. **Database:** create a free [Neon](https://neon.tech) project, put its connection string in `DATABASE_URL`, and run `uv run python scripts/setup_db.py`.
+2. **Bot:** deploy the [`Dockerfile`](Dockerfile) to Render (free web service) with the variables from [`.env.example`](.env.example). Point a free uptime monitor at `https://YOUR-BOT.onrender.com/` every 10 minutes.
+3. **WhatsApp:** in a Meta developer app, add WhatsApp and your number, create a permanent System User token, set the webhook to `https://YOUR-BOT.onrender.com/webhook` with your `WHATSAPP_VERIFY_TOKEN`, and subscribe to `messages`.
+4. **Website:** deploy `website/` to Vercel with `VITE_API_URL` and `VITE_WHATSAPP_NUMBER` ([`website/.env.example`](website/.env.example)).
+
+## Your AI (MCP)
+
+Hosted: users send **connect ai** on WhatsApp and get a page with their private URL, `https://YOUR-BOT.onrender.com/mcp?key=…`, plus copy-ready setup for Claude, ChatGPT, Cursor and Claude Code.
+
+Local, for the owner: `uv run fastmcp run server/main.py` serves the same tools over stdio against your own `DATABASE_URL`.
 
 ---
 
-## The Web3 Edge (Advanced MCP Tools)
-
-Spenzo seamlessly acts as a Bloomberg Terminal for personal crypto wallets, pulling live data from **Alchemy** (Ethereum) and **Helius** (Solana) RPCs.
-
-Whenever you provide a public Web3 wallet (`0x...` or `base58`), Spenzo exposes 4 powerful analytical tools:
-
-| Web3 Tool             | Capabilities                                                                 |
-| --------------------- | ---------------------------------------------------------------------------- |
-| `analyze_web3_wallet` | Scans an ETH/SOL wallet to pull real-time token balances and fiat Net Worth. |
-| `simulate_dex_swap`   | Hits DEX aggregators (Jupiter/Uniswap) to quote trades and slippage.         |
-| `analyze_gas_burn`    | Sweeps strictly on-chain transactions via Helius/Etherscan to compute real gas fees. |
-| `check_staking_yield` | Scans for LST balances (stETH, JitoSOL) and native validator staking rewards. |
-
----
-
-Spenzo securely transitions from a read-only intelligence layer to an active Execution tool. By dynamically constructing deep-link payloads, Spenzo handles complex routing and computation in the background, then hands you a 1-click confirmation prompt without ever requesting access to your private keys or banking credentials.
-
-| Execution Tool              | Action & Routing Mechanism                                                                |
-| --------------------------- | ----------------------------------------------------------------------------------------- |
-| `simulate_dex_swap`         | Hits Jupiter v6 Quote API to format exact _1-Click Transaction Execution_ links.          |
-| `generate_upi_payment_link` | Constructs `upi://pay` intent payloads and dynamic QR codes for 1-click fiat drops.       |
-| `log_debt` / `list_debts`   | Serves as an isolated IOU ledger, natively returning auto-generated UPI collection links. |
+MIT licensed. Investment information is factual and not financial advice.

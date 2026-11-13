@@ -1,27 +1,14 @@
-# We use Python 3.11-slim as the base image for Render deployments
-FROM python:3.11-slim
+# WhatsApp bot image (Render). Claude Desktop users run server/main.py instead.
+FROM python:3.12-slim
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-# Install uv package manager
-RUN pip install uv
-
-# Set working directory
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 
-# Copy dependency lockfiles first (speeds up caching)
-COPY uv.lock pyproject.toml ./
+# Dependencies first so they cache between deploys
+COPY pyproject.toml ./
+RUN uv sync --no-dev --no-install-project
 
-# Sync dependencies - use --no-dev to keep image lean,
-# and --python to ensure we match the base image's Python
-RUN uv sync --frozen --no-dev --python python3.11
+COPY server ./server
 
-# Copy application source code
-COPY . .
-
-# Expose default port (Render will override via $PORT env var)
 EXPOSE 8000
-
-# Start the FastAPI bot — reads $PORT from environment (set by Render)
-CMD ["sh", "-c", "uv run uvicorn server.bot:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uv run --no-dev uvicorn server.bot:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -1,0 +1,13 @@
+{
+  "name": "Spenzo",
+  "short_name": "Spenzo",
+  "description": "Your money buddy on WhatsApp",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#F3F6F0",
+  "theme_color": "#1D7533",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

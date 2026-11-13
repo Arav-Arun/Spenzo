@@ -1,35 +1,39 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #a7dd5d;
-  --color-black: #000000;
-  --color-surface: #0c0c0c;
-  --color-surface2: #141414;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-txt: #f0f0f0;
-  --color-muted: #666;
-  --font-sans: 'Space Grotesk', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  --color-paper: #F3F6F0;
+  --color-card: #FFFFFF;
+  --color-ink: #0E2A1F;
+  --color-muted: #56675D;
+  --color-line: #DAE3D8;
+  --color-leaf: #2E9E47;
+  --color-leaf-deep: #1D7533;
+  --color-leaf-soft: #E3F2DF;
+  --color-mango: #FFB627;
+  --color-mango-soft: #FFF1D6;
+  --color-chilli: #E5484D;
+  --color-chilli-soft: #FDE6E6;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-sans: "Hanken Grotesk", "Helvetica Neue", system-ui, sans-serif;
 }
 
 @layer base {
-  body {
-    background-color: var(--color-black);
-    color: var(--color-txt);
-    -webkit-font-smoothing: antialiased;
-  }
+  html { background: var(--color-paper); scroll-behavior: smooth; scroll-padding-top: 6rem; }
+  body { background: var(--color-paper); color: var(--color-ink); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; letter-spacing: -0.01em; }
+  :focus-visible { outline: 3px solid var(--color-mango); outline-offset: 2px; border-radius: 6px; }
+  .tabular { font-variant-numeric: tabular-nums; }
 }
 
-/* Custom Animations */
-@keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+@keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; scroll-behavior: auto !important; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .bob { animation: bob 3.2s ease-in-out infinite; transform-origin: 50% 90%; }
+  @keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
 }
 
-.animate-marquee {
-  animation: marquee 30s linear infinite;
-  will-change: transform;
-}
-
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+/* Rounded pill that becomes a smooth squircle where the browser supports it. */
+.squircle { border-radius: 32px; }
+@supports (corner-shape: squircle) { .squircle { corner-shape: squircle; } }
