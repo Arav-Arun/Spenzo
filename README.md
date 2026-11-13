@@ -1,10 +1,8 @@
-# Spenzo · your money buddy on WhatsApp
+# Spenzo · your personal finance buddy on WhatsApp
 
-![Spenzo: just text your money](website/public/og.png)
+**Just text your money.** Spenzo is a personal finance buddy that lives in WhatsApp. Track what you spend, split bills with friends, save for goals and keep an eye on your investments, all by chatting. No app, no forms, no passwords: your WhatsApp number is your account. It also plugs into Claude, ChatGPT and Cursor over MCP.
 
-**Just text your money.** Spenzo is a money buddy that lives in WhatsApp. Track what you spend, split bills with friends, save for goals and keep an eye on your investments, all by chatting. No app, no forms, no passwords: your WhatsApp number is your account. It also plugs into Claude, ChatGPT and Cursor over MCP.
-
-[spenzo.aravarun.in](https://www.spenzo.aravarun.in)
+**Live:** [spenzo.aravarun.in](https://www.spenzo.aravarun.in) · the bot and MCP server run at `spenzo-bot.onrender.com`
 
 ```
 You     chai 20
@@ -83,7 +81,8 @@ server/
   bot.py           the server: webhook, dashboard API (api.py), MCP at /mcp (main.py)
   auth.py          signed links; account.py links a local Claude Desktop
   chat.py          terminal simulator; localdb.py throwaway Postgres for tests
-scripts/           setup_db.py · dev.sh (local bot + tunnel) · import_v1.py (move v1 data)
+scripts/           setup_db.py · dev.sh (local bot + tunnel) · whatsapp_connect.py (point Meta at the bot)
+                   whatsapp_test.py (17-step live test on real WhatsApp) · import_v1.py (move v1 data)
 tests/             pytest on a real embedded Postgres; no network
 website/           Vite + React + Tailwind: landing, /app dashboard, /connect, /pay, /privacy
 schema.sql         the tables
@@ -105,17 +104,19 @@ uv run python -m server.chat --memory
 A WhatsApp-style chat in your terminal on a throwaway database: buttons show as `[1] [2] [3]`, and `/photo bill.jpg` or `/voice note.ogg` send media.
 
 ```bash
-uv run pytest                     # 38 tests on an embedded Postgres, nothing to install
+uv run pytest                     # 45 tests on an embedded Postgres, nothing to install
 cd website && npm install && npm run dev
 ```
 
 To try it on real WhatsApp before deploying, fill in `.env` and run `./scripts/dev.sh`. It starts the bot, opens a public tunnel and prints the webhook URL to paste into Meta.
 
+To check a deployed bot end to end, message it once from your phone, then run `BOT_URL=https://YOUR-BOT.onrender.com uv run python scripts/whatsapp_test.py`. It sends a signed webhook, plays a 16-message conversation through the real bot (you'll see the replies on your phone), checks each result in the database and deletes the test data.
+
 ## Deploy (free tiers)
 
 1. **Database:** create a free [Neon](https://neon.tech) project, put its connection string in `DATABASE_URL`, and run `uv run python scripts/setup_db.py`.
-2. **Bot:** deploy the [`Dockerfile`](Dockerfile) to Render (free web service) with the variables from [`.env.example`](.env.example). Point a free uptime monitor at `https://YOUR-BOT.onrender.com/` every 10 minutes.
-3. **WhatsApp:** in a Meta developer app, add WhatsApp and your number, create a permanent System User token, set the webhook to `https://YOUR-BOT.onrender.com/webhook` with your `WHATSAPP_VERIFY_TOKEN`, and subscribe to `messages`.
+2. **Bot:** on Render, New → Blueprint → this repo. [`render.yaml`](render.yaml) builds the [`Dockerfile`](Dockerfile) as a free web service and asks for each secret from [`.env.example`](.env.example). Point a free uptime monitor at `https://YOUR-BOT.onrender.com/` every 5 minutes so it doesn't sleep.
+3. **WhatsApp:** in a Meta developer app, add WhatsApp and your number, create a permanent System User token, then run `uv run python scripts/whatsapp_connect.py https://YOUR-BOT.onrender.com/webhook`. It sets the webhook, checks Meta verified it, and subscribes your WhatsApp account.
 4. **Website:** deploy `website/` to Vercel with `VITE_API_URL` and `VITE_WHATSAPP_NUMBER` ([`website/.env.example`](website/.env.example)).
 
 ## Your AI (MCP)

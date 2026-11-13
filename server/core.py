@@ -36,6 +36,20 @@ def month_range(day: str | None = None) -> tuple[str, str]:
     return d.replace(day=1).isoformat(), d.replace(day=calendar.monthrange(d.year, d.month)[1]).isoformat()
 
 
+def check_date(day: str, *, future_days: int = 1, past_days: int = 400) -> str:
+    """Reject dates far from today. AI apps connected over MCP don't know today's date and
+    tend to guess a year from their training; saying today's date in the error lets them retry."""
+    try:
+        d = date.fromisoformat(day)
+    except ValueError:
+        raise ValueError(f"'{day}' isn't a date. Use YYYY-MM-DD; today is {today()}.")
+    t = date.fromisoformat(today())
+    if d > t + timedelta(days=future_days) or d < t - timedelta(days=past_days):
+        raise ValueError(f"{day} looks wrong: today is {today()} (India). Use a date near today, "
+                         "or leave the date empty to mean today / this month.")
+    return day
+
+
 def phone(raw: str) -> str:
     """Normalise any phone format to +<digits> (WhatsApp sends '919876543210')."""
     digits = re.sub(r"\D", "", raw)

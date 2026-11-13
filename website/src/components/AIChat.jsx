@@ -1,5 +1,14 @@
-// An AI assistant using Spenzo: a placeholder until we have real screenshots.
+// An AI assistant using Spenzo. Set this to true once website/public/demo/ai.mp4 (a real recording
+// of Claude or ChatGPT using Spenzo, with ai.jpg as its first frame) is in place.
+const RECORDED = false;
+
 export default function AIChat() {
+  if (RECORDED) {
+    return (
+      <video src="/demo/ai.mp4" poster="/demo/ai.jpg" autoPlay muted loop playsInline preload="metadata"
+        className="w-full max-w-xl rounded-2xl border border-white/10 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]" />
+    );
+  }
   return (
     <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-[#17211C] text-[14.5px] leading-relaxed text-paper shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
       <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NAME, whatsappLink } from '../brand';
 import Dashboard from '../components/Dashboard';
 import { WhatsAppIcon } from '../components/Icons';
@@ -32,7 +32,6 @@ export default function DashboardPage() {
   const [month, setMonth] = useState(thisMonth());
   const [data, setData] = useState(null);
   const [portfolio, setPortfolio] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   // Arriving from WhatsApp: /app#t=<one-time token>
   useEffect(() => {
@@ -42,21 +41,20 @@ export default function DashboardPage() {
     signIn(token).then(() => setSignedIn(true)).catch((e) => setError(e.message));
   }, []);
 
-  const load = useCallback(async () => {
+  // Load the month; bump `reload` to fetch it again. Dimmed while what's shown isn't the latest.
+  const [reload, setReload] = useState(0);
+  const [shown, setShown] = useState('');
+  const wanted = `${month}:${reload}`;
+  const loading = shown !== wanted;
+  useEffect(() => {
     if (!signedIn) return;
-    setLoading(true);
-    try {
-      setData(await getOverview(month));
-      setError('');
-    } catch (e) {
-      setError(e.message);
-      if (!session()) setSignedIn(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [signedIn, month]);
-
-  useEffect(() => { load(); }, [load]);
+    let current = true;
+    getOverview(month)
+      .then((d) => { if (current) { setData(d); setError(''); } })
+      .catch((e) => { if (!current) return; setError(e.message); if (!session()) setSignedIn(false); })
+      .finally(() => { if (current) setShown(`${month}:${reload}`); });
+    return () => { current = false; };
+  }, [signedIn, month, reload]);
   useEffect(() => {
     if (signedIn) getPortfolio().then(setPortfolio).catch(() => setPortfolio({ holdings: [], facts: [], mix_pct: {} }));
   }, [signedIn]);
@@ -65,7 +63,7 @@ export default function DashboardPage() {
 
   const remove = async (id) => {
     await deleteTransaction(id);
-    load();
+    setReload((n) => n + 1);
   };
   const isCurrent = month >= thisMonth();
 

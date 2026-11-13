@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import Mascot from './Mascot';
-import PhoneChat from './PhoneChat';
+import PhoneChat, { PhoneVideo } from './PhoneChat';
 
 // Each feature, explained plainly, next to the exact conversation it creates.
+// Real screen recordings replace the drawn chat: put website/public/demo/<key>.mp4 (and <key>.jpg as
+// its first frame) in place, then add the key here.
+const RECORDED = new Set([]);
 const LOG_BUTTONS = ['↩️ Undo', '✏️ Edit', '📊 This month'];
 const FEATURES = [
   {
+    key: 'log',
     title: 'Log what you spend in seconds',
+    short: 'Log spends',
     pose: 'salute',
     body: 'Type it the way you’d text a friend, send a photo of the bill, or a voice note. Spenzo picks the category for you, and Undo is one tap away.',
     chat: [
@@ -19,7 +24,9 @@ const FEATURES = [
     ],
   },
   {
+    key: 'split',
     title: 'Split bills with friends',
+    short: 'Split bills',
     pose: 'split',
     body: 'Tell Spenzo who was there. It works out everyone’s share, keeps a running tab with each friend, and makes payment links you can forward.',
     chat: [
@@ -32,7 +39,9 @@ const FEATURES = [
     ],
   },
   {
+    key: 'budgets',
     title: 'Budgets that warn you early',
+    short: 'Budgets',
     pose: 'worried',
     body: 'Set a limit in plain words. Spenzo tells you when you’ve used 80%, when you’re over, and if you’re spending too fast for the month.',
     chat: [
@@ -43,7 +52,9 @@ const FEATURES = [
     ],
   },
   {
+    key: 'goals',
     title: 'Save up for what you want',
+    short: 'Save up',
     pose: 'save',
     body: 'Name a goal and a date. Spenzo tells you how much to put away each month, and on payday it asks if you want to move money to it.',
     chat: [
@@ -56,7 +67,9 @@ const FEATURES = [
     ],
   },
   {
+    key: 'invest',
     title: 'Keep an eye on your investments',
+    short: 'Investments',
     pose: 'grow',
     body: 'Send a screenshot of your Groww or Zerodha holdings. Spenzo tracks your stocks, mutual funds and crypto at live prices. Facts only, never tips.',
     chat: [
@@ -67,7 +80,9 @@ const FEATURES = [
     ],
   },
   {
+    key: 'ask',
     title: 'Ask anything about your money',
+    short: 'Ask anything',
     pose: 'thinking',
     body: 'Where did it go? Can you afford it? Spenzo answers from your real numbers, in English, Hinglish or Hindi, whichever you use.',
     chat: [
@@ -78,7 +93,9 @@ const FEATURES = [
     ],
   },
   {
+    key: 'dashboard',
     title: 'See everything on your dashboard',
+    short: 'Dashboard',
     pose: 'report',
     body: 'Tap the button in any reply to see your month in charts: budgets, goals, friends and investments. No password, ever.',
     chat: [
@@ -97,6 +114,7 @@ export default function FeatureShowcase() {
   const [calm] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   const box = useRef(null);
   const rotating = !hovering && onScreen && !calm;
+  const feature = FEATURES[active];
 
   // Only rotate while the section is actually being looked at.
   useEffect(() => {
@@ -111,32 +129,60 @@ export default function FeatureShowcase() {
     return () => clearTimeout(next);
   }, [active, rotating]);
 
+  const progress = (on) => on && rotating && (   /* restarts with the timer whenever rotation resumes */
+    <span aria-hidden="true" className="absolute bottom-0 left-0 h-[3px] w-full origin-left bg-leaf"
+      style={{ animation: `progress ${SECONDS}s linear forwards` }} />
+  );
+  const mouseOnly = (value) => (e) => e.pointerType === 'mouse' && setHovering(value);
+
   return (
-    <div ref={box} onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}
-      className="grid items-start gap-10 lg:grid-cols-[1fr_auto] lg:gap-16">
-      <ol className="space-y-2.5" role="tablist" aria-label="Features">
+    <div ref={box} onPointerEnter={mouseOnly(true)} onPointerLeave={mouseOnly(false)}
+      className="grid items-start gap-8 lg:grid-cols-[1fr_auto] lg:gap-16">
+      {/* Phones: square tiles, four on top and three centred below, with the chosen feature explained underneath. */}
+      <div className="min-w-0 lg:hidden">
+        <div role="tablist" aria-label="Features" className="mx-auto flex max-w-xl flex-wrap justify-center gap-2 sm:gap-3">
+          {FEATURES.map((f, i) => {
+            const on = i === active;
+            return (
+              <button key={f.key} role="tab" aria-selected={on} onClick={() => setActive(i)}
+                className={`relative flex aspect-square w-[calc((100%-1.5rem)/4)] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl border p-1 transition-colors sm:w-[calc((100%-2.25rem)/4)] ${on ? 'border-leaf bg-card shadow-sm' : 'border-line bg-card/50'}`}>
+                <Mascot pose={f.pose} title="" className={`h-9 w-9 transition sm:h-12 sm:w-12 ${on ? '' : 'opacity-75 grayscale-[35%]'}`} />
+                <span className={`text-center text-[11.5px] leading-tight font-bold sm:text-[13px] ${on ? 'text-ink' : 'text-ink/65'}`}>{f.short}</span>
+                {progress(on)}
+              </button>
+            );
+          })}
+        </div>
+        <div key={active} className="mt-5 animate-[fadein_.35s_ease-out]">
+          <h3 className="text-xl font-bold">{feature.title}</h3>
+          <p className="mt-2 leading-relaxed text-muted">{feature.body}</p>
+        </div>
+      </div>
+
+      {/* Larger screens: the full list beside the phone. */}
+      <ol className="hidden space-y-2.5 lg:block" role="tablist" aria-label="Features">
         {FEATURES.map((f, i) => {
           const on = i === active;
           return (
-            <li key={f.title}>
+            <li key={f.key}>
               <button role="tab" aria-selected={on} onClick={() => setActive(i)}
-                className={`relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-colors sm:p-5 ${on ? 'border-leaf bg-card' : 'border-transparent hover:border-line hover:bg-card/60'}`}>
+                className={`relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border p-5 text-left transition-colors ${on ? 'border-leaf bg-card' : 'border-transparent hover:border-line hover:bg-card/60'}`}>
                 <Mascot pose={f.pose} title="" className={`shrink-0 transition-all ${on ? 'h-16 w-16' : 'h-12 w-12 opacity-80 grayscale-[35%]'}`} />
                 <span className="min-w-0">
                   <span className={`block text-lg font-bold ${on ? 'text-ink' : 'text-ink/70'}`}>{f.title}</span>
                   {on && <span className="mt-1 block leading-relaxed text-muted">{f.body}</span>}
                 </span>
-                {on && rotating && (   /* restarts with the timer whenever rotation resumes */
-                  <span aria-hidden="true" className="absolute bottom-0 left-0 h-[3px] w-full origin-left bg-leaf"
-                    style={{ animation: `progress ${SECONDS}s linear forwards` }} />
-                )}
+                {progress(on)}
               </button>
             </li>
           );
         })}
       </ol>
+
       <div className="relative isolate mx-auto w-fit lg:sticky lg:top-28">
-        <PhoneChat key={active} messages={FEATURES[active].chat} className="animate-[fadein_.35s_ease-out]" />
+        {RECORDED.has(feature.key)
+          ? <PhoneVideo key={active} src={`/demo/${feature.key}.mp4`} poster={`/demo/${feature.key}.jpg`} className="animate-[fadein_.35s_ease-out]" />
+          : <PhoneChat key={active} messages={feature.chat} className="animate-[fadein_.35s_ease-out]" />}
       </div>
     </div>
   );

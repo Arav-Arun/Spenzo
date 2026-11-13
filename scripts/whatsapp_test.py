@@ -26,7 +26,7 @@ import httpx  # noqa: E402
 from server import core, db, profile, whatsapp  # noqa: E402
 from server.conversation import Incoming, respond  # noqa: E402
 
-BOT = "http://localhost:8000"
+BOT = core.env("BOT_URL", "http://localhost:8000")
 # Each step, and what must be true in the database (or the reply) afterwards.
 SCRIPT = [
     ("uber 260", "select count(*) from transactions where phone = %s and description ilike '%%uber%%'"),

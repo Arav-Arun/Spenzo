@@ -2,7 +2,7 @@
 from datetime import date
 
 from server import db
-from server.core import current_user, month_range, today
+from server.core import check_date, current_user, month_range, today
 from server.markets import to_inr
 
 CATEGORIES = {
@@ -29,6 +29,8 @@ def _record(kind: str, amount: float, category: str, description: str, note: str
             day: str, currency: str, tags: list[str] | None) -> dict:
     if amount <= 0:
         raise ValueError("Amount must be more than zero.")
+    if day:
+        check_date(day)
     if currency.upper() not in ("INR", "₹", "RS"):
         original = f"{amount:g} {currency.upper()}"
         amount, per_unit = to_inr(amount, currency)
@@ -57,9 +59,11 @@ def add_income(amount: float, category: str = "Salary", description: str = "", d
 
 
 def summarize(start_date: str = "", end_date: str = "") -> dict:
-    """Money in and out between two dates (YYYY-MM-DD, inclusive; default this month):
-    total spent, spending by category, income, and what's left."""
+    """Money in and out between two dates (YYYY-MM-DD, inclusive): total spent, spending by
+    category, income, and what's left. Leave both dates empty for the current month: the result
+    includes today's date, so don't guess dates from your own knowledge."""
     start, end = (start_date, end_date) if start_date and end_date else month_range()
+    check_date(start), check_date(end, future_days=366)
     groups = db.rows(
         "select kind, category, sum(amount) as total, count(*) as n from transactions "
         "where phone = %s and date between %s and %s group by kind, category order by total desc",
@@ -68,15 +72,19 @@ def summarize(start_date: str = "", end_date: str = "") -> dict:
     income = sum(g["total"] for g in groups if g["kind"] == "income")
     total = sum(g["total"] for g in spent)
     return {
-        "from": start, "to": end, "spent": round(total, 2), "income": round(income, 2),
+        "today": today(), "from": start, "to": end, "spent": round(total, 2), "income": round(income, 2),
         "left": round(income - total, 2) if income else None,
         "by_category": [{"category": g["category"], "total": round(g["total"], 2)} for g in spent],
         "count": sum(g["n"] for g in spent),
     }
 
 
-def list_transactions(start_date: str, end_date: str, kind: str = "expense") -> list[dict]:
-    """Every expense (or income, kind='income') between two dates, oldest first."""
+def list_transactions(start_date: str = "", end_date: str = "", kind: str = "expense") -> list[dict]:
+    """Every expense (or income, kind='income') between two dates (YYYY-MM-DD), oldest first.
+    Leave both dates empty for the current month."""
+    if not (start_date and end_date):
+        start_date, end_date = month_range()
+    check_date(start_date), check_date(end_date, future_days=366)
     return db.rows(f"select {FIELDS} from transactions where phone = %s and kind = %s "
                    "and date between %s and %s order by date, id", current_user(), kind, start_date, end_date)
 
@@ -101,6 +109,8 @@ def edit_transaction(transaction_id: int, amount: float | None = None, category:
                                      note=note, date=date).items() if v is not None}
     if tags is not None:
         changes["tags"] = _clean_tags(tags)
+    if date is not None:
+        check_date(date)
     if not changes:
         raise ValueError("Nothing to change.")
     sets = ", ".join(f"{col} = %s" for col in changes if col in EDITABLE)

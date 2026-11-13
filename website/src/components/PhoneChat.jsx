@@ -106,7 +106,8 @@ function Bubble({ m }) {
   );
 }
 
-export default function PhoneChat({ messages, className = '' }) {
+// The iPhone itself. Anything can go on its screen: the drawn chat, or a real screen recording.
+export function PhoneFrame({ children, className = '' }) {
   const side = 'absolute w-[3px] bg-[#3a3a3c]';
   return (
     <div className={`relative w-[300px] sm:w-[322px] ${className}`}>
@@ -118,38 +119,55 @@ export default function PhoneChat({ messages, className = '' }) {
 
       <div className="rounded-[3.1rem] bg-gradient-to-b from-[#3a3a3c] to-[#1c1c1e] p-[3px] shadow-[0_0_0_1px_rgba(0,0,0,0.4)]">
         <div className="rounded-[2.95rem] bg-black p-[9px]">
-          <div className="flex aspect-[9/19.5] flex-col overflow-hidden rounded-[2.4rem] bg-[#EFEAE2] text-[13.5px] leading-snug text-[#111b21]">
-            <div className="bg-[#F7F8FA]"><StatusBar /></div>
-
-            <div className="flex shrink-0 items-center gap-2 border-b border-black/10 bg-[#F7F8FA] px-2 pb-2">
-              <Svg name="back" className="h-6 w-6 text-[#007AFF]" />
-              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full"><Mascot pose="avatar" className="h-full w-full object-cover" /></div>
-              <div className="min-w-0 flex-1 leading-tight">
-                <div className="truncate text-[15px] font-semibold">{NAME}</div>
-                <div className="text-[11.5px] text-black/50">online</div>
-              </div>
-              <Svg name="video" className="h-6 w-6 text-[#007AFF]" />
-              <Svg name="phone" className="mr-1 ml-3 h-5 w-5 text-[#007AFF]" />
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col justify-end gap-1.5 overflow-hidden px-2.5 py-3"
-              style={{ backgroundImage: 'radial-gradient(rgba(0,0,0,0.045) 1px, transparent 1.2px)', backgroundSize: '14px 14px' }}>
-              <span className="mb-1 self-center rounded-md bg-white/90 px-2 py-0.5 text-[11px] text-black/55 shadow-sm">Today</span>
-              {messages.map((m, i) => <Bubble key={i} m={m} />)}
-            </div>
-
-            <div className="shrink-0 bg-[#F7F8FA] px-2 pt-2 pb-1">
-              <div className="flex items-center gap-2">
-                <Svg name="plus" className="h-6 w-6 text-[#007AFF]" />
-                <div className="h-8 flex-1 rounded-full border border-black/10 bg-white" />
-                <Svg name="camera" className="h-6 w-6 text-[#007AFF]" />
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white"><Svg name="mic" className="h-[18px] w-[18px]" /></span>
-              </div>
-              <div className="mx-auto mt-2.5 mb-1 h-[5px] w-28 rounded-full bg-black" />
-            </div>
-          </div>
+          <div className="aspect-[9/19.5] overflow-hidden rounded-[2.4rem] bg-[#EFEAE2]">{children}</div>
         </div>
       </div>
     </div>
+  );
+}
+
+// A real recording from the phone (it already shows the status bar, so it fills the whole screen).
+export function PhoneVideo({ src, poster, className = '' }) {
+  return (
+    <PhoneFrame className={className}>
+      <video src={src} poster={poster} autoPlay muted loop playsInline preload="metadata" className="h-full w-full object-cover" />
+    </PhoneFrame>
+  );
+}
+
+export default function PhoneChat({ messages, className = '' }) {
+  return (
+    <PhoneFrame className={className}>
+      <div className="flex h-full flex-col text-[13.5px] leading-snug text-[#111b21]">
+        <div className="bg-[#F7F8FA]"><StatusBar /></div>
+
+        <div className="flex shrink-0 items-center gap-2 border-b border-black/10 bg-[#F7F8FA] px-2 pb-2">
+          <Svg name="back" className="h-6 w-6 text-[#007AFF]" />
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full"><Mascot pose="avatar" className="h-full w-full object-cover" /></div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-[15px] font-semibold">{NAME}</div>
+            <div className="text-[11.5px] text-black/50">online</div>
+          </div>
+          <Svg name="video" className="h-6 w-6 text-[#007AFF]" />
+          <Svg name="phone" className="mr-1 ml-3 h-5 w-5 text-[#007AFF]" />
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col justify-end gap-1.5 overflow-hidden px-2.5 py-3"
+          style={{ backgroundImage: 'radial-gradient(rgba(0,0,0,0.045) 1px, transparent 1.2px)', backgroundSize: '14px 14px' }}>
+          <span className="mb-1 self-center rounded-md bg-white/90 px-2 py-0.5 text-[11px] text-black/55 shadow-sm">Today</span>
+          {messages.map((m, i) => <Bubble key={i} m={m} />)}
+        </div>
+
+        <div className="shrink-0 bg-[#F7F8FA] px-2 pt-2 pb-1">
+          <div className="flex items-center gap-2">
+            <Svg name="plus" className="h-6 w-6 text-[#007AFF]" />
+            <div className="h-8 flex-1 rounded-full border border-black/10 bg-white" />
+            <Svg name="camera" className="h-6 w-6 text-[#007AFF]" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white"><Svg name="mic" className="h-[18px] w-[18px]" /></span>
+          </div>
+          <div className="mx-auto mt-2.5 mb-1 h-[5px] w-28 rounded-full bg-black" />
+        </div>
+      </div>
+    </PhoneFrame>
   );
 }

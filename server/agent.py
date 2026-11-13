@@ -97,7 +97,10 @@ def _for_model(result: dict) -> str:
     return json.dumps(visible, default=str, ensure_ascii=False)
 
 
-AMOUNT = re.compile(r"\d")
+# Messages that change something: an amount ("salary 60k"), or a word like paid / settle / save.
+# Answering one of these without a tool call means nothing was saved, so we insist on a tool.
+NEEDS_TOOL = re.compile(r"\d|\b(paid|pay|payed|settle[sd]?|back|wapas|lauta\w*|returned|add|log|set|save|move|"
+                        r"delete|remove|undo)\b", re.I)
 
 
 async def _think(messages: list[dict], text: str = "") -> tuple[Reply, set[str]]:
@@ -108,9 +111,9 @@ async def _think(messages: list[dict], text: str = "") -> tuple[Reply, set[str]]
         resp = await _client().chat.completions.create(
             model=MODEL, messages=messages, tools=SCHEMAS, max_tokens=800, temperature=0.3, tool_choice=choice)
         msg = resp.choices[0].message
-        if step == 0 and not msg.tool_calls and AMOUNT.search(text):
-            # A message with an amount in it ("salary 60k", "keep food under 1500") always needs a
-            # tool: answering without one means nothing was saved. Ask again, requiring a tool.
+        if step == 0 and not msg.tool_calls and NEEDS_TOOL.search(text):
+            # "salary 60k", "Arav paid me back": answering without a tool means nothing was saved.
+            # Ask again, requiring a tool.
             resp = await _client().chat.completions.create(
                 model=MODEL, messages=messages, tools=SCHEMAS, max_tokens=800, temperature=0.3, tool_choice="required")
             msg = resp.choices[0].message

@@ -2,7 +2,7 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { NAME } from '../brand';
 
-const CONTACT = 'spenzo@aravarun.in';
+const CONTACT = 'hi@aravarun.in';
 
 const Section = ({ title, children }) => (
   <section className="space-y-3">
@@ -95,7 +95,7 @@ export default function Privacy() {
               'Sign out of every browser: send “sign me out everywhere”.',
               'Stop nudges: send “stop nudges”.',
             ]} />
-            <p>Under India’s Digital Personal Data Protection Act, 2023, you can also ask us for a summary of your data, ask us to correct or erase it, or raise a grievance. Write to us using the contact below.</p>
+            <p>Under India’s Digital Personal Data Protection Act, 2023, you can also ask us for a summary of your data, ask us to correct or erase it, or raise a complaint. Write to us using the contact below.</p>
           </Section>
 
           <Section title="Security">
@@ -122,9 +122,9 @@ export default function Privacy() {
             <p>We may update this policy from time to time. For important changes, we’ll let you know on WhatsApp or on this website before they take effect.</p>
           </Section>
 
-          <Section title="Contact and grievances">
+          <Section title="Contact">
             <p>
-              Arav Arun, Grievance Officer · <a className="font-semibold text-leaf-deep hover:underline" href={`mailto:${CONTACT}`}>{CONTACT}</a>
+              Arav Arun · <a className="font-semibold text-leaf-deep hover:underline" href={`mailto:${CONTACT}`}>{CONTACT}</a>
               <br />We aim to reply within 7 days.
             </p>
           </Section>

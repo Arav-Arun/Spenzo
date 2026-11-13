@@ -1,0 +1,32 @@
+# The WhatsApp bot and hosted MCP on Render's free plan.
+# Render → New → Blueprint → this repo; it asks for each value marked sync: false.
+services:
+  - type: web
+    name: spenzo-bot
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: WEB_URL
+        value: https://www.spenzo.aravarun.in
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: ALCHEMY_API_KEY
+        sync: false
+      - key: HELIUS_API_KEY
+        sync: false

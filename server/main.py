@@ -25,7 +25,9 @@ INSTRUCTIONS = (
     "Split (who owes whom), Save (goals, stocks, mutual funds, crypto wallets, net worth). Answer "
     "money questions from these real numbers. Amounts are INR unless stated. Log expenses without "
     "asking for confirmation; find a transaction with search_transactions before editing it. "
-    "Report investment facts only, never buy/sell advice."
+    "Report investment facts only, never buy/sell advice. Dates are in India time: leave date "
+    "arguments empty to mean the current month, and use the 'today' a tool returns rather than "
+    "guessing today's date."
 )
 
 

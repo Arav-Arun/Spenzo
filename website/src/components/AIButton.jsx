@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NAME, whatsappLink } from '../brand';
 
-// "Copy Prompt": copies a setup prompt you paste into any AI agent (Claude Code, Codex, Cursor…).
+// "Set up MCP": copies a setup prompt you paste into any AI agent (Claude Code, Codex, Cursor…).
 // The agent then asks for your private Spenzo link and adds it as an MCP server.
 const PROMPT = `Connect ${NAME} to this AI app so you can answer questions about my money.
 
@@ -43,10 +43,10 @@ export default function AIButton({ className = '' }) {
     }
   };
   return (
-    <button type="button" onClick={copy} aria-live="polite"
+    <button type="button" onClick={copy} aria-live="polite" title="Copies a setup prompt to paste into Claude, ChatGPT or Cursor"
       className={`squircle group inline-flex cursor-pointer items-center justify-center gap-2.5 border border-gray-950 bg-gray-950 px-6 py-4 font-medium text-white shadow-sm transition-colors hover:bg-gray-800 ${className}`}>
       <Icons />
-      <span>{copied ? 'Copied!' : 'Copy Prompt'}</span>
+      <span>{copied ? 'Copied! Paste it in your AI' : 'Set up MCP'}</span>
     </button>
   );
 }

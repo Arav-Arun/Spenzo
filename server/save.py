@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 from server import db, markets
-from server.core import current_user, today
+from server.core import check_date, current_user, today
 
 FUND_WORDS = ("fund", "flexi cap", "large cap", "mid cap", "small cap", "elss", "index", "direct", "growth")
 
@@ -44,6 +44,8 @@ def add_goal(name: str, target: float, deadline: str = "") -> dict:
     """Start a savings goal ("Goa trip, ₹30,000 by March"). deadline YYYY-MM-DD, optional."""
     if target <= 0:
         raise ValueError("Target must be more than zero.")
+    if deadline:
+        check_date(deadline, future_days=365 * 30, past_days=0)
     return _progress(db.row("insert into goals (phone, name, target, deadline, created_at) "
                             "values (%s, %s, %s, %s, %s) returning *",
                             current_user(), name.strip(), round(target, 2), deadline or None, today()))
