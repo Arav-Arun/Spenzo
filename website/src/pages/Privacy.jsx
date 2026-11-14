@@ -45,8 +45,8 @@ export default function Privacy() {
             <p><b>When you message {NAME} on WhatsApp:</b></p>
             <List items={[
               'Your WhatsApp phone number and the profile name WhatsApp shares with businesses. Your number is your account.',
-              'The messages you send: text, photos (for example bills or investment screenshots) and voice notes.',
-              'What you ask us to keep track of: expenses and income, budgets, savings goals, amounts you owe or are owed along with the names you give for those people, investment holdings, and public crypto wallet addresses.',
+              'The messages you send or forward: text, photos (for example bills, payment or investment screenshots), voice notes, and PDFs such as bank or mutual fund statements. A password you send to open a locked PDF is used once to open it and is never stored.',
+              'What you ask us to keep track of: expenses and income, budgets, savings goals, amounts you owe or are owed along with the names you give for those people, and investment holdings.',
               'Things you ask us to remember, such as your name, your monthly income or your salary day.',
               'A UPI ID, only if you share one so we can make payment links for you.',
             ]} />
@@ -71,9 +71,9 @@ export default function Privacy() {
             <p>We use a few trusted services to run {NAME}. Each receives only what it needs:</p>
             <List items={[
               <span key="meta"><b>Meta (WhatsApp Business Platform)</b>, which delivers messages between you and {NAME}.</span>,
-              <span key="openai"><b>OpenAI</b>, which processes your messages, photos and voice notes to understand them and write replies. Under OpenAI’s API terms, this data isn’t used to train their models by default.</span>,
+              <span key="openai"><b>OpenAI</b>, which processes your messages, photos, voice notes and the text of PDFs you send to understand them and write replies. Under OpenAI’s API terms, this data isn’t used to train their models by default.</span>,
               <span key="hosting"><b>Our hosting providers</b>: Neon (database), Render (server) and Vercel (website), which store and serve your data on our behalf.</span>,
-              <span key="markets"><b>Market data providers</b>: Coinbase, Yahoo Finance and mfapi.in for prices, and Alchemy and Helius for wallet balances. They receive only a stock or fund name, a currency, or a wallet address, never your phone number or other details.</span>,
+              <span key="markets"><b>Market data providers</b>: Coinbase, Yahoo Finance and mfapi.in for prices. They receive only a stock or fund name or a currency, never your phone number or other details.</span>,
               <span key="qr"><b>QR code service</b> (api.qrserver.com): when someone opens a payment link on a computer, the UPI ID and amount in that link are sent to it to draw the QR code.</span>,
             ]} />
             <p>Some of these providers may process data outside India. We may also disclose information if required by law or to protect the safety of our users.</p>

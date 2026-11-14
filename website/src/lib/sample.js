@@ -43,14 +43,13 @@ export const SAMPLE_OVERVIEW = {
 };
 
 export const SAMPLE_PORTFOLIO = {
-  value: 48230,
+  value: 44380,
   gain_on_holdings_with_known_cost: { holdings: ['Tata Consultancy Services', 'Parag Parikh Flexi Cap'], invested: 42000, now_worth: 44380, gain: 2380, gain_pct: 5.7 },
-  mix_pct: { stock: 50, mutual_fund: 42, crypto_wallet: 8 },
+  mix_pct: { stock: 54, mutual_fund: 46 },
   holdings: [
-    { name: 'Tata Consultancy Services', kind: 'stock', value: 24000, share_pct: 50, gain_pct: 4.9, today_pct: 1.2 },
-    { name: 'Parag Parikh Flexi Cap Fund - Direct Plan - Growth', kind: 'mutual_fund', value: 20380, share_pct: 42, gain_pct: 6.4 },
-    { name: 'Solana wallet 7xK3…9fQa', kind: 'crypto_wallet', value: 3850, share_pct: 8 },
+    { name: 'Tata Consultancy Services', kind: 'stock', value: 24000, share_pct: 54, gain_pct: 4.9, today_pct: 1.2 },
+    { name: 'Parag Parikh Flexi Cap Fund - Direct Plan - Growth', kind: 'mutual_fund', value: 20380, share_pct: 46, gain_pct: 6.4 },
   ],
-  facts: ['Tata Consultancy Services is 50% of the portfolio.'],
+  facts: ['Tata Consultancy Services is 54% of the portfolio.'],
   note: 'Prices can be up to 15 minutes old. Mutual fund values use the latest published NAV.',
 };

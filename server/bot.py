@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
-from server import api, brand, db, main, whatsapp
+from server import api, brand, db, whatsapp
 from server.conversation import Incoming, respond
 from server.core import env
 from server.replies import Reply
@@ -19,7 +19,7 @@ from server.replies import Reply
 logging.basicConfig(level=env("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("spenzo")
 
-app = FastAPI(title=brand.NAME, lifespan=main.hosted.lifespan)
+app = FastAPI(title=brand.NAME)
 app.add_middleware(CORSMiddleware, allow_origins=[brand.WEB_URL, "http://localhost:5173"],
                    allow_methods=["GET", "POST", "DELETE"], allow_headers=["Authorization", "Content-Type"])
 app.include_router(api.router)
@@ -48,16 +48,23 @@ def _first_time(message_id: str) -> bool:
 async def handle(m: dict) -> None:
     try:
         _spawn(whatsapp.typing(m["id"]))
-        msg = Incoming(phone=m["phone"], name=m["name"], text=m["text"], button_id=m["button_id"])
+        msg = Incoming(phone=m["phone"], name=m["name"], text=m["text"], button_id=m["button_id"],
+                       forwarded=m["forwarded"])
+        timeout = 60
         if m["type"] == "image" or (m["type"] == "document" and m["mime"].startswith("image/")):
             msg.image = await whatsapp.download(m["media_id"])
+        elif m["type"] == "document" and m["mime"] == "application/pdf":
+            data, _ = await whatsapp.download(m["media_id"])
+            msg.pdf = (data, m["filename"])
+            timeout = 180   # a long statement takes a while to read
+            await whatsapp.send(m["phone"], Reply("📄 Got it, reading that now…"))
         elif m["type"] == "audio":
             msg.audio = await whatsapp.download(m["media_id"])
         elif m["type"] not in ("text", "button"):
-            await whatsapp.send(m["phone"], Reply("I can read text, photos and voice notes. Try one of those!"))
+            await whatsapp.send(m["phone"], Reply("I can read text, photos, PDFs and voice notes. Try one of those!"))
             return
-        for reply in await asyncio.wait_for(respond(msg), timeout=60):
-            await whatsapp.send(m["phone"], reply)
+        for reply in await asyncio.wait_for(respond(msg), timeout=timeout):
+            await whatsapp.send(m["phone"], reply, reply_to=m["id"])
     except asyncio.TimeoutError:
         log.error("Timed out answering %s", m["phone"])
         await whatsapp.send(m["phone"], Reply("⏱️ That took too long. Please try again!"))
@@ -96,7 +103,3 @@ async def webhook(request: Request):
             log.info("Message from %s (%s)", m["phone"], m["type"])
             _spawn(handle(m))
     return {"ok": True}   # answer Meta at once; replies go out from the background tasks
-
-
-# Spenzo for AI assistants: https://<server>/mcp?key=<personal key>. Mounted last so the routes above win.
-app.mount("/", main.hosted)

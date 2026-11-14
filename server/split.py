@@ -7,6 +7,16 @@ from server.core import current_user, today
 
 UPI_ID = re.compile(r"^[\w.\-]{2,256}@[A-Za-z]{2,64}$")
 DIRECTIONS = ("they_owe", "i_owe")
+# Stand-ins a model might invent when the user didn't say who: never store these.
+PLACEHOLDER = re.compile(r"^(friend|person|someone|somebody|unknown|other|guest|people|friends)\s*\d*$", re.I)
+
+
+def _name(person: str) -> str:
+    """A person's name as people write it: "kabir" -> "Kabir", "DJ" stays "DJ"."""
+    person = " ".join(person.split())
+    if PLACEHOLDER.match(person):
+        raise ValueError("The user didn't say who this is. Ask them for the person's name; don't make one up.")
+    return person.title() if person.islower() else person
 
 
 def pay_link(upi_id: str, amount: float, note: str = "") -> str:
@@ -34,9 +44,10 @@ def log_debt(person: str, amount: float, reason: str = "", direction: str = "the
         raise ValueError("direction must be 'they_owe' or 'i_owe'.")
     if amount <= 0:
         raise ValueError("Amount must be more than zero.")
+    person = _name(person)
     db.execute("insert into debts (phone, person, direction, amount, reason, date) values (%s, %s, %s, %s, %s, %s)",
-               current_user(), person.strip(), direction, round(amount, 2), reason, today())
-    return {"person": person.strip(), "direction": direction, "logged": round(amount, 2), "balance": balance(person)}
+               current_user(), person, direction, round(amount, 2), reason, today())
+    return {"person": person, "direction": direction, "logged": round(amount, 2), "balance": balance(person)}
 
 
 def list_debts(upi_id: str = "") -> dict:

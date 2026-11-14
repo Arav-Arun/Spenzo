@@ -1,7 +1,5 @@
 import { ArrowRight } from 'lucide-react';
 import { NAME, whatsappLink } from '../brand';
-import AIButton from '../components/AIButton';
-import AIChat from '../components/AIChat';
 import Dashboard from '../components/Dashboard';
 import FeatureShowcase from '../components/FeatureShowcase';
 import Footer from '../components/Footer';
@@ -40,7 +38,6 @@ const FAQ = [
   ['Who can see my data?', 'Only you. It’s tied to your WhatsApp number, and the dashboard only opens from a link sent to your own chat.'],
   ['Will it tell me which stocks to buy?', 'No. It shows facts about your own investments, like their value and how they’re doing. It never gives buy or sell tips.'],
   ['Will it spam me?', 'No. It only speaks up in its replies to you, at most once per message, and “stop nudges” turns that off.'],
-  ['Which AI apps does it work with?', 'Any app that supports MCP connectors, including Claude, ChatGPT and Cursor. Send “connect ai” on WhatsApp to get your private link.'],
   ['How do I delete my data?', 'Send “delete my data” on WhatsApp and tap Yes. It’s permanent.'],
 ];
 
@@ -73,10 +70,7 @@ export default function Home() {
             {NAME} is your money buddy on WhatsApp. Track what you spend, split bills with friends, save for goals and
             keep an eye on your investments, all just by chatting.
           </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <WhatsAppButton />
-            <AIButton />
-          </div>
+          <WhatsAppButton />
         </div>
         <div className="relative isolate mx-auto w-fit">
           <PhoneChat messages={HERO_CHAT} />
@@ -108,27 +102,6 @@ export default function Home() {
         </div>
       </Section>
 
-      <div id="ai" className="bg-ink text-paper">
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <h2 className="text-3xl font-extrabold md:text-[2.6rem] md:leading-tight">Works with your AI, too</h2>
-            <p className="mt-4 max-w-lg text-lg leading-relaxed text-paper/75">
-              Connect {NAME} to Claude, ChatGPT or Cursor and ask for bigger things: a savings plan, a year in review, or a
-              spreadsheet of your spending. It uses the same data as your WhatsApp chat.
-            </p>
-            <ol className="mt-6 space-y-2 text-paper/85">
-              <li>1. Send <b className="text-paper">connect ai</b> to {NAME} on WhatsApp.</li>
-              <li>2. Open your private link and copy it into your AI app.</li>
-              <li>3. Ask away.</li>
-            </ol>
-            <a href="/connect" className="mt-8 inline-flex items-center gap-2 rounded-full bg-paper px-6 py-3.5 font-semibold text-ink hover:bg-white">
-              See how to connect <ArrowRight size={16} />
-            </a>
-          </div>
-          <AIChat />
-        </section>
-      </div>
-
       <Section title="Your money stays yours">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PROMISES.map(([t, b]) => (
@@ -154,7 +127,6 @@ export default function Home() {
           </div>
         </Section>
       </div>
-
 
       <Footer />
     </div>

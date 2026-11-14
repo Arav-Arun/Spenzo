@@ -1,4 +1,4 @@
-"""Save: goals, investments (stocks, mutual funds, crypto wallets) and net worth.
+"""Save: goals, investments (stocks and mutual funds) and net worth.
 
 Spenzo reports facts about a portfolio and never recommends buying or selling.
 """
@@ -90,18 +90,8 @@ def add_investment(name: str, quantity: float, avg_price: float = 0, kind: str =
     return {"added": found["name"], "kind": kind, "quantity": quantity}
 
 
-def add_wallet(address: str) -> dict:
-    """Track a public Ethereum or Solana wallet as part of the user's net worth."""
-    chain = markets.chain_of(address)
-    address = address.strip()
-    db.execute("insert into holdings (phone, kind, symbol, name, quantity) values (%s, 'crypto_wallet', %s, %s, 0) "
-               "on conflict (phone, kind, symbol) do nothing",
-               current_user(), address, f"{chain.title()} wallet {address[:6]}…{address[-4:]}")
-    return {"added": chain, **markets.wallet_value(address)}
-
-
 def remove_investment(name: str) -> dict:
-    """Stop tracking a holding or wallet (sold, or added by mistake)."""
+    """Stop tracking a holding (sold, or added by mistake)."""
     gone = db.row("delete from holdings where id = (select id from holdings where phone = %s and "
                   "(name ilike %s or symbol ilike %s) order by created_at limit 1) returning name",
                   current_user(), f"%{name}%", f"%{name}%")
@@ -112,8 +102,6 @@ def remove_investment(name: str) -> dict:
 
 def _price(h: dict) -> dict:
     try:
-        if h["kind"] == "crypto_wallet":
-            return {"value": markets.wallet_value(h["symbol"])["value"], "invested": None, "day_change_pct": None}
         quote = markets.fund_nav(h["symbol"]) if h["kind"] == "mutual_fund" else markets.stock_price(h["symbol"])
         prev = quote.get("previous_close")
         return {"value": round(quote["price"] * h["quantity"], 2),

@@ -9,8 +9,8 @@ from functools import lru_cache
 
 from openai import AsyncOpenAI
 
-from server import brand, core, nudges, profile
-from server.replies import Reply, logged, whatsapp_format
+from server import brand, core, db, nudges, profile, split
+from server.replies import Reply, goal_sticker, logged, whatsapp_format
 from server.spend import CATEGORIES
 from server.tools import CHAT_TOOLS, EVENTS, schema
 
@@ -19,6 +19,7 @@ log = logging.getLogger("spenzo")
 MODEL = core.env("OPENAI_MODEL", "gpt-4.1-mini")
 TRANSCRIBE_MODEL = core.env("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe")
 MAX_STEPS = 6
+QUIET_AFTER = 3   # after this many spends, a plain "chai 20" gets just a ✅ reaction
 
 TOOLS = {fn.__name__: fn for fn in CHAT_TOOLS}
 SCHEMAS = [schema(fn) for fn in CHAT_TOOLS]
@@ -46,13 +47,29 @@ What you keep track of:
   category. Foreign money: pass the original amount and currency.
 - Split: "split with Arav and Riya" means the user plus each named person share equally (3000
   split with two friends = 1000 each: log 1000 with add_expense and 1000 for each friend with
-  log_debt). Who owes whom works in both directions. For "who owes me", show the list and offer pay links
+  log_debt). If a split doesn't say who the others were ("4 ways"), log only the user's
+  share and ask for their names; never invent names like "friend1". Who owes whom works in both directions. For "who owes me", show the list and offer pay links
   if they share a UPI ID.
-- Save: goals, investments (stocks, mutual funds, crypto wallets) and net worth. For a
+- Save: goals, investments (stocks and mutual funds) and net worth. For a
   screenshot of holdings, call add_investment once per row. Report facts only: never tell the
   user to buy, sell or hold anything; explain trade-offs instead.
 - You: save anything worth remembering with remember (name, income, salary day, people,
   plans) without asking.
+- See: for "show me", "compare", "this year vs last" or any trend, call spending_chart; the
+  picture goes with your reply, so give one or two lines of the key numbers and don't say a
+  chart or picture is attached. For a month's
+  highlights, call wrapped.
+
+Forwarded and shared things:
+- A message marked [forwarded] was written by someone else in another chat, not the user.
+  "I sent you 500" / "paid you back" forwarded = someone paid the user: call list_debts first,
+  and if exactly one person owes about that much, settle_debt for them and say so; only ask who
+  it was if several people (or nobody) fit. A forwarded bill or split ("bill 4800, 4 ways") = log
+  the user's share with add_expense (a restaurant or food bill is Food & Dining); if the other
+  people aren't named, ask who they were so you can track what each owes.
+- A payment screenshot (GPay, PhonePe, Paytm, a bank app): money the user paid is add_expense
+  with the merchant or person as the description; money received is add_income, or settle_debt
+  if that person owed the user.
 
 Categories: {categories}
 What you know about the user: {about}
@@ -61,8 +78,8 @@ Style: plain WhatsApp text, *bold* allowed, no headings, tables or markdown link
 under 4 lines; lists and summaries can be longer. Rupees as ₹ with Indian grouping (₹1,23,456).
 Never mention tool names or ids. Links and buttons from tools are attached automatically: don't
 paste URLs. To change or delete something, find it with search_transactions first; never ask
-for an id. A message that is only a UPI ID means "make pay links for my debts". A message that
-is only a wallet address means "track this wallet". If a tool fails, say what to try instead."""
+for an id. A message that is only a UPI ID means "make pay links for my debts". If a tool fails,
+say what to try instead."""
 
 
 @lru_cache
@@ -94,7 +111,39 @@ def _for_model(result: dict) -> str:
     visible = {k: v for k, v in result.items() if not k.startswith("_")}
     if "_link" in result or "_buttons" in result:
         visible["shown_to_user"] = "a button is attached to your reply"
+    if "_image" in result:
+        visible["shown_to_user"] = "a picture is attached to your reply"
     return json.dumps(visible, default=str, ensure_ascii=False)
+
+
+def _sticker(tool: str, arguments: str, result: dict) -> str:
+    """Baaz turns up for milestones: a goal half done or reached, everyone settled up."""
+    if tool == "add_to_goal":
+        return goal_sticker(result, float(json.loads(arguments or "{}").get("amount", 0)))
+    if tool == "settle_debt":
+        debts = split.list_debts()
+        if not debts["they_owe_you"] and not debts["you_owe"]:
+            return "salute"
+    return ""
+
+
+NUMBER = re.compile(r"(\d+(?:[.,]\d+)*)\s*(k|K)?\b")
+
+
+def _said_amount(text: str, amount: float) -> bool:
+    """The logged amount is one the user actually typed (so a silent ✅ can't hide a misread)."""
+    for digits, k in NUMBER.findall(text):
+        try:
+            value = float(digits.replace(",", "")) * (1000 if k else 1)
+        except ValueError:
+            continue
+        if abs(value - amount) < 0.01:
+            return True
+    return False
+
+
+def _expense_count() -> int:
+    return db.value("select count(*) from transactions where phone = %s and kind = 'expense'", core.current_user())
 
 
 # Messages that change something: an amount ("salary 60k"), or a word like paid / settle / save.
@@ -103,9 +152,9 @@ NEEDS_TOOL = re.compile(r"\d|\b(paid|pay|payed|settle[sd]?|back|wapas|lauta\w*|r
                         r"delete|remove|undo)\b", re.I)
 
 
-async def _think(messages: list[dict], text: str = "") -> tuple[Reply, set[str]]:
+async def _think(messages: list[dict], text: str = "", fast: bool = True) -> tuple[Reply, set[str]]:
     events: set[str] = set()
-    link, buttons = None, []
+    link, buttons, png, sticker = None, [], None, ""
     for step in range(MAX_STEPS):
         choice = "none" if step == MAX_STEPS - 1 else "auto"
         resp = await _client().chat.completions.create(
@@ -118,7 +167,8 @@ async def _think(messages: list[dict], text: str = "") -> tuple[Reply, set[str]]
                 model=MODEL, messages=messages, tools=SCHEMAS, max_tokens=800, temperature=0.3, tool_choice="required")
             msg = resp.choices[0].message
         if not msg.tool_calls:
-            return Reply(whatsapp_format(msg.content or "Sorry, I didn't catch that."), buttons, link), events
+            return Reply(whatsapp_format(msg.content or "Sorry, I didn't catch that."), buttons, link,
+                         png=png, sticker=sticker), events
 
         messages.append(msg.model_dump(exclude_none=True))
         results = []
@@ -132,17 +182,22 @@ async def _think(messages: list[dict], text: str = "") -> tuple[Reply, set[str]]
                     events.add("salary")
                 link = result.get("_link", link)
                 buttons = result.get("_buttons", buttons)
+                png = result.get("_image", png)
+                sticker = _sticker(call.function.name, call.function.arguments, result) or sticker
             messages.append({"role": "tool", "tool_call_id": call.id, "content": _for_model(result)})
 
         # A plain "spent X on Y" needs no second model call.
-        if step == 0 and len(results) == 1 and results[0][0] == "add_expense" and "error" not in results[0][1]:
+        if fast and step == 0 and len(results) == 1 and results[0][0] == "add_expense" and "error" not in results[0][1]:
             return logged(results[0][1]), events
     return Reply("Sorry, that took too many steps. Try asking more simply?"), events
 
 
-async def reply(text: str, image: tuple[bytes, str] | None = None) -> Reply:
-    """Answer one message from the current user."""
-    content = [{"type": "text", "text": text or "Here's a photo. If it's a bill, log it; if it's my holdings, add them."}]
+async def reply(text: str, image: tuple[bytes, str] | None = None, *, forwarded: bool = False,
+                quiet_ok: bool = True) -> Reply:
+    """Answer one message from the current user. quiet_ok lets a plain spend go out as just a ✅."""
+    prompt = text or ("Here's a photo. If it's a bill or a payment screenshot, log it; if it's my holdings, "
+                      "add them.")
+    content = [{"type": "text", "text": f"[forwarded] {prompt}" if forwarded else prompt}]
     if image:
         data, mime = image
         content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{base64.b64encode(data).decode()}"}})
@@ -150,8 +205,17 @@ async def reply(text: str, image: tuple[bytes, str] | None = None) -> Reply:
     messages = [{"role": "system", "content": await asyncio.to_thread(_system)}, *history,
                 {"role": "user", "content": content}]
 
-    answer, events = await _think(messages, text)
+    answer, events = await _think(messages, text, fast=not forwarded)
     nudge = await asyncio.to_thread(nudges.next_nudge, events)
+    if answer.quick and not nudge and quiet_ok and not image and not forwarded and _said_amount(text, _amount(answer)):
+        count = await asyncio.to_thread(_expense_count)
+        if count > QUIET_AFTER:
+            await asyncio.to_thread(profile.save_exchange, text, answer.text)
+            if await asyncio.to_thread(nudges.once, "tip:quiet", "once"):
+                answer.text += "\n\nFrom now on I'll just react ✅ to quick spends like this. Say *undo* to take one back."
+                answer.react = "✅"
+                return answer
+            return Reply("", react="✅")
     if nudge:
         answer.text += "\n\n" + nudge.text
         if nudge.buttons:
@@ -160,6 +224,12 @@ async def reply(text: str, image: tuple[bytes, str] | None = None) -> Reply:
             answer.then = Reply("👇", link=nudge.link)
     await asyncio.to_thread(profile.save_exchange, text or "[sent a photo]", answer.text)
     return answer
+
+
+def _amount(answer: Reply) -> float:
+    """The amount in a "✅ ₹1,200 · …" log line."""
+    m = re.search(r"₹([\d,]+(?:\.\d+)?)", answer.text)
+    return float(m.group(1).replace(",", "")) if m else -1
 
 
 async def transcribe(audio: bytes, mime: str) -> str:

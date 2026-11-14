@@ -17,7 +17,6 @@ from server.core import current_user, env
 
 MAGIC_SECONDS = 15 * 60
 SESSION_SECONDS = 30 * 24 * 3600
-AI_KEY_SECONDS = 365 * 24 * 3600
 
 _secret = env("SECRET_KEY").encode() or secrets.token_bytes(32)
 if not env("SECRET_KEY"):
@@ -69,7 +68,3 @@ def dashboard_link() -> dict:
     It's attached as a button automatically; don't paste the URL."""
     return {"_link": ("📊 Open dashboard", dashboard_url()), "valid_for_minutes": MAGIC_SECONDS // 60}
 
-
-def ai_connect_url() -> str:
-    """The setup page with the user's personal AI key (valid a year; "sign me out everywhere" revokes it)."""
-    return f"{brand.WEB_URL}/connect#k={make_token(current_user(), 'mcp', AI_KEY_SECONDS)}"

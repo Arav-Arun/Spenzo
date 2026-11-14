@@ -3,8 +3,8 @@ import { compactInr, dayLabel, inr } from '../lib/format';
 import Mascot from './Mascot';
 
 const TABS = ['Spend', 'Split', 'Save', 'Activity'];
-const KIND_LABEL = { stock: 'Stocks', mutual_fund: 'Mutual funds', crypto_wallet: 'Crypto' };
-const KIND_COLOR = { stock: 'bg-leaf', mutual_fund: 'bg-mango', crypto_wallet: 'bg-ink' };
+const KIND_LABEL = { stock: 'Stocks', mutual_fund: 'Mutual funds' };
+const KIND_COLOR = { stock: 'bg-leaf', mutual_fund: 'bg-mango' };
 
 const Card = ({ children, className = '' }) => <section className={`rounded-2xl border border-line bg-card p-5 ${className}`}>{children}</section>;
 const Label = ({ children }) => <h3 className="mb-3 text-sm font-semibold text-muted">{children}</h3>;

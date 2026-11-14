@@ -1,13 +1,12 @@
-"""The one list of tools, shared by WhatsApp (agent.py) and AI assistants over MCP (main.py).
-
-Grouped the way the product is: Spend · Split · Save · You.
+"""The tools the WhatsApp agent can call (agent.py), grouped the way the product is:
+Spend · Split · Save · See · You.
 """
 import inspect
 import typing
 
 from pydantic import create_model
 
-from server import account, auth, profile, save, spend, split
+from server import auth, insights, profile, save, spend, split
 
 
 def delete_my_data() -> dict:
@@ -22,12 +21,11 @@ SPEND = [spend.add_expense, spend.add_income, spend.summarize, spend.list_transa
          spend.set_budget, spend.budget_status]
 SPLIT = [split.log_debt, split.list_debts, split.settle_debt]
 SAVE = [save.add_goal, save.add_to_goal, save.goals_status, save.delete_goal,
-        save.add_investment, save.add_wallet, save.remove_investment, save.portfolio, save.net_worth]
+        save.add_investment, save.remove_investment, save.portfolio, save.net_worth]
+SEE = [insights.spending_chart, insights.wrapped]
 YOU = [profile.remember, profile.forget, profile.set_nudges, profile.sign_out_everywhere, auth.dashboard_link]
 
-CHAT_TOOLS = SPEND + SPLIT + SAVE + YOU + [delete_my_data]
-AI_TOOLS = SPEND + SPLIT + SAVE + [profile.remember, auth.dashboard_link]   # Claude, ChatGPT, Cursor…
-LOCAL_ONLY_TOOLS = [account.link_whatsapp, account.finish_linking]           # owner's own machine, over stdio
+CHAT_TOOLS = SPEND + SPLIT + SAVE + SEE + YOU + [delete_my_data]
 
 # What each write means for nudges.
 EVENTS = {"add_expense": "expense", "add_income": "income", "log_debt": "debt",

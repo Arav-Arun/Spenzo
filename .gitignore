@@ -1,48 +1,49 @@
-# Python
-__pycache__/
-*.py[oc]
-*.egg-info
-*.whl
-
-# Virtual environments
-.venv/
-
-# Build artifacts
-build/
-dist/
-wheels/
-*.spec
-
-# Database and secrets
-*.db
-*.sqlite3
+# Secrets and local config
 .env
-
-# macOS
-.DS_Store
-
-# Vercel
+.env.*
+!.env.example
+.neon
 .vercel/
 
-# Node / Website build outputs
-website/node_modules/
-website/dist/
-website/.npm-cache/
-
-# Lock files
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 uv.lock
-website/package-lock.json
 
-# IDE
+# Node and the website build
+node_modules/
+dist/
+build/
+.npm-cache/
+package-lock.json
+
+# Local databases
+*.db
+*.sqlite3
+
+# Editors, AI tools and OS files
+.claude/
+CLAUDE.md
+.cursor/
 .vscode/
 .idea/
 *.swp
 *.swo
+.DS_Store
+Thumbs.db
 
-# Removed from repo (local-only files)
-FEATURES.md
-sse_relay.py
-build_binary.sh
-website/README.md
-.neon
-node_modules/
+# Logs and scratch
+*.log
+*.tmp
+*.spec
+
+# Local notes, not part of the project
+*.local.md
+brand/*.md
+brand/raw/

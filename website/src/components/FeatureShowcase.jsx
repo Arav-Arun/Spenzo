@@ -13,7 +13,7 @@ const FEATURES = [
     title: 'Log what you spend in seconds',
     short: 'Log spends',
     pose: 'salute',
-    body: 'Type it the way you’d text a friend, send a photo of the bill, or a voice note. Spenzo picks the category for you, and Undo is one tap away.',
+    body: 'Type it the way you’d text a friend, send a photo of the bill or a voice note, or forward your bank statement PDF to fill in the whole month. Spenzo picks the categories for you.',
     chat: [
       { me: true, text: 'uber 260', time: '9:05' },
       { text: '✅ ₹260 · Uber / Transport', buttons: ['↩️ Undo', '📊 This month'], time: '9:05' },
@@ -28,7 +28,7 @@ const FEATURES = [
     title: 'Split bills with friends',
     short: 'Split bills',
     pose: 'split',
-    body: 'Tell Spenzo who was there. It works out everyone’s share, keeps a running tab with each friend, and makes payment links you can forward.',
+    body: 'Tell Spenzo who was there, or forward the bill from your group chat. It works out everyone’s share, keeps a running tab with each friend, and makes payment links you can forward.',
     chat: [
       { me: true, text: 'dinner 3000 split with Arav and Riya', time: '21:40' },
       { text: '✅ ₹1,000 · Dinner / Food & Dining\nArav and Riya owe you ₹1,000 each 🤝', time: '21:40' },
@@ -71,7 +71,7 @@ const FEATURES = [
     title: 'Keep an eye on your investments',
     short: 'Investments',
     pose: 'grow',
-    body: 'Send a screenshot of your Groww or Zerodha holdings. Spenzo tracks your stocks, mutual funds and crypto at live prices. Facts only, never tips.',
+    body: 'Send a screenshot of your Groww or Zerodha holdings, or forward your mutual fund statement. Spenzo tracks your stocks and funds at live prices. Facts only, never tips.',
     chat: [
       { me: true, photo: 'holdings', time: '19:10' },
       { text: '📈 Added 4 holdings: TCS, Reliance, Parag Parikh Flexi Cap and Nifty 50 Index.', time: '19:10' },
@@ -84,7 +84,7 @@ const FEATURES = [
     title: 'Ask anything about your money',
     short: 'Ask anything',
     pose: 'thinking',
-    body: 'Where did it go? Can you afford it? Spenzo answers from your real numbers, in English, Hinglish or Hindi, whichever you use.',
+    body: 'Where did it go? Can you afford it? Spenzo answers from your real numbers, in English, Hinglish or Hindi, and sends a chart when a picture says it better.',
     chat: [
       { me: true, text: 'where did my money go this month?', time: '22:01' },
       { text: '📊 November so far: ₹26,530\nRent ₹18,000 · Food ₹4,930 · Shopping ₹2,600 · Transport ₹1,000', time: '22:01' },

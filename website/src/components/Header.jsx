@@ -2,7 +2,7 @@ import { NAME, whatsappLink } from '../brand';
 import { WhatsAppIcon } from './Icons';
 import Mascot from './Mascot';
 
-const LINKS = [['How it works', '/#how'], ['Features', '/#features'], ['Your AI', '/#ai'], ['FAQ', '/#faq']];
+const LINKS = [['How it works', '/#how'], ['Features', '/#features'], ['FAQ', '/#faq']];
 
 // A floating frosted-glass bar that rides over the page as you scroll.
 export default function Header() {

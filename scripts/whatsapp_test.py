@@ -44,7 +44,6 @@ SCRIPT = [
     ("kitna kharcha hua is mahine?", "reply: ₹"),
     ("[month]", "reply: so far"),
     ("login", "reply: dashboard"),
-    ("connect ai", "reply: link"),
 ]
 
 

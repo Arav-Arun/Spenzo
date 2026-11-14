@@ -52,7 +52,7 @@ def set_nudges(on: bool) -> dict:
 
 
 def sign_out_everywhere() -> dict:
-    """Sign out of the Spenzo dashboard on every browser, and disconnect every AI app."""
+    """Sign out of the Spenzo dashboard on every browser."""
     ensure()
     return db.row("update users set session_version = session_version + 1 where phone = %s "
                   "returning session_version", current_user())

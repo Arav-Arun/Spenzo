@@ -1,4 +1,4 @@
-# WhatsApp bot image (Render). Claude Desktop users run server/main.py instead.
+# The WhatsApp bot and dashboard API (Render).
 FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

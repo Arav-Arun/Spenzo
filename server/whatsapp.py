@@ -1,4 +1,5 @@
-"""WhatsApp Cloud API (Meta, direct): parse webhooks, send messages and buttons, fetch media.
+"""WhatsApp Cloud API (Meta, direct): parse webhooks, send messages, buttons, reactions,
+stickers and pictures, fetch media.
 
 Free for replies to messages users send. Configure with:
 WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN.
@@ -11,6 +12,7 @@ import time
 
 import httpx
 
+from server import brand
 from server.core import env
 from server.replies import Reply
 
@@ -55,7 +57,8 @@ def signature_ok(body: bytes, header: str) -> bool:
 
 
 def parse(payload: dict) -> list[dict]:
-    """Flatten a webhook into messages: {id, phone, name, type, text, media_id, mime, button_id}."""
+    """Flatten a webhook into messages: {id, phone, name, type, text, media_id, mime, filename,
+    button_id, forwarded}."""
     out = []
     for entry in payload.get("entry", []):
         for change in entry.get("changes", []):
@@ -64,12 +67,15 @@ def parse(payload: dict) -> list[dict]:
             for m in value.get("messages", []):
                 kind = m.get("type")
                 msg = {"id": m["id"], "phone": "+" + m["from"], "name": names.get(m["from"], ""),
-                       "type": kind, "text": "", "media_id": "", "mime": "", "button_id": ""}
+                       "type": kind, "text": "", "media_id": "", "mime": "", "filename": "", "button_id": "",
+                       "forwarded": bool(m.get("context", {}).get("forwarded")
+                                         or m.get("context", {}).get("frequently_forwarded"))}
                 if kind == "text":
                     msg["text"] = m["text"]["body"]
                 elif kind in ("image", "audio", "document"):
                     media = m[kind]
-                    msg.update(media_id=media["id"], mime=media.get("mime_type", ""), text=media.get("caption", ""))
+                    msg.update(media_id=media["id"], mime=media.get("mime_type", ""), text=media.get("caption", ""),
+                               filename=media.get("filename", ""))
                 elif kind == "interactive":
                     picked = m["interactive"].get("button_reply") or m["interactive"].get("list_reply") or {}
                     msg.update(type="button", button_id=picked.get("id", ""), text=picked.get("title", ""))
@@ -97,21 +103,60 @@ def payload_for(to: str, reply: Reply) -> dict:
     return base | {"type": "text", "text": {"body": reply.text[:TEXT_LIMIT], "preview_url": False}}
 
 
-async def send(to: str, reply: Reply) -> bool:
-    """Send one reply. Returns True if WhatsApp accepted it (or it was only logged locally)."""
+def sticker_url(name: str) -> str:
+    return f"{brand.WEB_URL}/stickers/baaz-{name}.webp"
+
+
+def extras_for(to: str, reply: Reply, reply_to: str = "") -> tuple[list[dict], list[dict]]:
+    """The messages that go before and after a reply's main bubble: a reaction, then a sticker."""
+    base = {"messaging_product": "whatsapp", "recipient_type": "individual", "to": to.lstrip("+")}
+    before = [base | {"type": "reaction", "reaction": {"message_id": reply_to, "emoji": reply.react}}] \
+        if reply.react and reply_to else []
+    after = [base | {"type": "sticker", "sticker": {"link": sticker_url(reply.sticker)}}] if reply.sticker else []
+    return before, after
+
+
+async def _upload(client: httpx.AsyncClient, png: bytes) -> str:
+    resp = await client.post(f"{_graph()}/{env('WHATSAPP_PHONE_NUMBER_ID')}/media", headers=_headers(),
+                             data={"messaging_product": "whatsapp", "type": "image/png"},
+                             files={"file": ("spenzo.png", png, "image/png")})
+    return resp.raise_for_status().json()["id"]
+
+
+async def send(to: str, reply: Reply, reply_to: str = "") -> bool:
+    """Send one reply (and its reaction, picture and sticker). Returns True if WhatsApp accepted
+    all of it, or it was only logged locally. reply_to is the user's message id, for reactions."""
     if reply.image and env("WHATSAPP_TOKEN") and not await image_reachable(reply.image):
-        reply = Reply(reply.text, reply.buttons, reply.link)
+        reply = Reply(reply.text, reply.buttons, reply.link, react=reply.react, sticker=reply.sticker, png=reply.png)
     if not env("WHATSAPP_TOKEN"):
         extras = [t for _, t in reply.buttons] + ([reply.link[0]] if reply.link else [])
-        log.info("[WhatsApp -> %s] %s %s", to, reply.text, extras or "")
+        marks = [f"react {reply.react}"] * bool(reply.react) + [f"sticker {reply.sticker}"] * bool(reply.sticker) \
+            + [f"picture {len(reply.png or b'') // 1024} KB"] * bool(reply.png)
+        log.info("[WhatsApp -> %s] %s %s %s", to, reply.text, extras or "", marks or "")
         return True
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.post(f"{_graph()}/{env('WHATSAPP_PHONE_NUMBER_ID')}/messages",
-                                 headers=_headers(), json=payload_for(to, reply))
-    if resp.is_error:
-        log.error("WhatsApp send failed %s: %s", resp.status_code, resp.text[:300])
-        return False
-    return True
+    before, after = extras_for(to, reply, reply_to)
+    main = []
+    async with httpx.AsyncClient(timeout=30) as client:
+        try:
+            if reply.png:
+                media_id = await _upload(client, reply.png)
+                main.append({"messaging_product": "whatsapp", "recipient_type": "individual", "to": to.lstrip("+"),
+                             "type": "image", "image": {"id": media_id, "caption": reply.text[:BODY_LIMIT]}})
+                if reply.buttons or reply.link:
+                    main.append(payload_for(to, Reply("👇", reply.buttons, reply.link)))
+            elif reply.text:
+                main.append(payload_for(to, reply))
+        except httpx.HTTPError as e:
+            log.error("WhatsApp picture upload failed: %s", e)
+            main.append(payload_for(to, Reply(reply.text or "📊", reply.buttons, reply.link)))
+        ok = True
+        for payload in before + main + after:
+            resp = await client.post(f"{_graph()}/{env('WHATSAPP_PHONE_NUMBER_ID')}/messages",
+                                     headers=_headers(), json=payload)
+            if resp.is_error:
+                log.error("WhatsApp send (%s) failed %s: %s", payload["type"], resp.status_code, resp.text[:300])
+                ok = False
+    return ok
 
 
 async def typing(message_id: str) -> None:

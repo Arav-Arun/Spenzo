@@ -1,13 +1,15 @@
-"""What Spenzo sends back: text plus up to 3 buttons or one link button.
+"""What Spenzo sends back: text plus up to 3 buttons or one link button, and optionally a
+reaction on the user's message, a Baaz sticker or a generated picture.
 
-Also the replies that need no AI at all: welcome, help, and every button press
+Also the replies that need no AI at all: welcome, help, undo, and every button press
 (Undo, This month, Set budget…), so taps answer instantly.
 """
 import re
 from dataclasses import dataclass, field
 from datetime import date
 
-from server import auth, brand, profile, save, spend, split
+from server import auth, brand, db, profile, save, spend, split
+from server.core import current_user
 
 
 @dataclass
@@ -17,6 +19,10 @@ class Reply:
     link: tuple[str, str] | None = None                            # (label, url) · shown as a button
     image: str = ""                                                # public image URL shown above the text
     then: "Reply | None" = None                                    # an optional second message
+    react: str = ""                                                # emoji reaction on the user's message
+    sticker: str = ""                                              # Baaz sticker sent after the text: "celebrate"
+    png: bytes | None = None                                       # a generated picture, with the text as caption
+    quick: bool = False                                            # a plain log that may go out as just a ✅
 
 
 def inr(amount: float) -> str:
@@ -40,10 +46,33 @@ def logged(e: dict) -> Reply:
     what = e["description"] or e["category"]
     note = f"\n_{e['note']}_" if e.get("note") else ""
     return Reply(f"✅ {inr(e['amount'])} · {what} / {e['category']}{note}",
-                 buttons=[(f"undo:{e['id']}", "↩️ Undo"), (f"edit:{e['id']}", "✏️ Edit"), ("month", "📊 This month")])
+                 buttons=[(f"undo:{e['id']}", "↩️ Undo"), (f"edit:{e['id']}", "✏️ Edit"), ("month", "📊 This month")],
+                 quick=True)
+
+
+def goal_sticker(goal: dict, added: float) -> str:
+    """Baaz cheers when a top-up crosses halfway or finishes a goal."""
+    if added <= 0 or not goal.get("target"):
+        return ""
+    before = 100 * (goal["saved"] - added) / goal["target"]
+    if before < 100 <= goal["pct"]:
+        return "celebrate"
+    if before < 50 <= goal["pct"]:
+        return "grow"
+    return ""
 
 
 # --- No-AI replies ---------------------------------------------------------------
+
+
+def undo_last() -> Reply:
+    """Remove the user's most recent transaction ("undo", "delete that")."""
+    last = db.row("select id from transactions where phone = %s and source is null "
+                  "and created_at > now() - interval '1 day' order by id desc limit 1", current_user())
+    if not last:
+        return Reply("Nothing recent to undo.")
+    gone = spend.delete_transaction(last["id"])["deleted"]
+    return Reply(f"↩️ Removed {inr(gone['amount'])} · {gone['description'] or gone['category']}.")
 
 
 def welcome(name: str) -> Reply:
@@ -63,7 +92,8 @@ def help_menu() -> Reply:
         "💸 *Spend*: \"food 450\", \"salary 60k\", \"keep food under 6k\"\n"
         "🤝 *Split*: \"dinner 3000 split with Arav and Riya\", \"I owe Kabir 200\"\n"
         "🎯 *Save*: \"Goa trip 30k by March\", \"I have 10 TCS shares\"\n"
-        "📊 *See*: \"where did my money go?\", \"can I afford a 40k phone?\"",
+        "📊 *See*: \"where did my money go?\", \"Swiggy this year vs last\"\n"
+        "📄 *Forward*: a bank statement PDF, a payment screenshot, or a bill from any chat",
         buttons=[("month", "📊 This month"), ("debts", "🤝 Who owes me"), ("goals", "🎯 My goals")],
     )
 
@@ -130,7 +160,15 @@ def press(button_id: str) -> Reply:
     if action == "goalmove":
         goal, amount = arg.rsplit(":", 1)
         g = save.add_to_goal(goal, float(amount))
-        return Reply(f"🎯 {inr(float(amount))} moved to {g['name']}. You're at {g['pct']}%.")
+        return Reply(f"🎯 {inr(float(amount))} moved to {g['name']}. You're at {g['pct']}%.",
+                     sticker=goal_sticker(g, float(amount)))
+    if action == "undo_import":
+        n = db.value("with gone as (delete from transactions where phone = %s and source = %s returning 1) "
+                     "select count(*) from gone", current_user(), arg)
+        return Reply(f"↩️ Removed the {n} transactions from that statement." if n else "That import is already gone.")
+    if action == "wrapped":
+        from server import insights   # imports replies, so load it on demand
+        return insights.wrapped_reply(arg)
     if action == "nudges_off":
         profile.set_nudges(False)
         return Reply("Okay, no more nudges. Say *turn nudges on* anytime.")
