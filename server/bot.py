@@ -5,6 +5,7 @@ Run with: uvicorn server.bot:app
 import asyncio
 import json
 import logging
+import re
 import time
 
 from fastapi import FastAPI, Request, Response
@@ -26,6 +27,8 @@ app.include_router(api.router)
 
 _background: set[asyncio.Task] = set()
 _seen: dict[str, float] = {}   # Meta can deliver a webhook twice; answer each message once
+# "chai 20", "uber 260": often answered with just a ✅ reaction, so no typing dots for these.
+QUICK_SPEND = re.compile(r"^\s*[^\d\s][^\d]{0,30}\s\d[\d,.]*\s*k?\s*$|^\s*\d[\d,.]*\s*k?\s+[^\d]{1,30}$", re.I)
 SEEN_SECONDS = 3600
 
 
@@ -47,7 +50,7 @@ def _first_time(message_id: str) -> bool:
 
 async def handle(m: dict) -> None:
     try:
-        _spawn(whatsapp.typing(m["id"]))
+        _spawn(whatsapp.typing(m["id"], show=not QUICK_SPEND.match(m["text"]) or m["type"] != "text"))
         msg = Incoming(phone=m["phone"], name=m["name"], text=m["text"], button_id=m["button_id"],
                        forwarded=m["forwarded"])
         timeout = 60
@@ -65,7 +68,7 @@ async def handle(m: dict) -> None:
             return
         for reply in await asyncio.wait_for(respond(msg), timeout=timeout):
             await whatsapp.send(m["phone"], reply, reply_to=m["id"])
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log.error("Timed out answering %s", m["phone"])
         await whatsapp.send(m["phone"], Reply("⏱️ That took too long. Please try again!"))
     except Exception:

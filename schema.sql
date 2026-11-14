@@ -91,9 +91,17 @@ create table if not exists nudges_sent (
   primary key (phone, key, period)
 );
 
+-- A locked PDF waiting (10 minutes at most) for the password the user sends next.
+create table if not exists locked_files (
+  phone      text primary key,
+  data       bytea not null,
+  filename   text default '',
+  created_at timestamptz default now()
+);
+
 -- Only matters on hosts that expose tables over a public API (like Supabase): lock them.
 -- Spenzo connects as the owner, which row-level security doesn't restrict.
 do $$ declare t text; begin
-  foreach t in array array['users','transactions','budgets','debts','goals','holdings','messages','nudges_sent']
+  foreach t in array array['users','transactions','budgets','debts','goals','holdings','messages','nudges_sent','locked_files']
   loop execute format('alter table %I enable row level security', t); end loop;
 end $$;

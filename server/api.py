@@ -22,14 +22,14 @@ def _signed_in(request: Request) -> None:
     try:
         core.set_user(auth.read_token(header.removeprefix("Bearer ").strip(), "session"))
     except ValueError as e:
-        raise HTTPException(401, str(e))
+        raise HTTPException(401, str(e)) from None
 
 
 def _month(month: str) -> tuple[str, str]:
     try:
         return month_range(f"{month}-01") if month else month_range()
     except ValueError:
-        raise HTTPException(400, "month must look like 2026-11")
+        raise HTTPException(400, "month must look like 2026-11") from None
 
 
 @router.post("/session")
@@ -38,7 +38,7 @@ def start_session(body: SessionRequest):
     try:
         phone = auth.read_token(body.token, "magic")
     except ValueError as e:
-        raise HTTPException(401, str(e))
+        raise HTTPException(401, str(e)) from None
     core.set_user(phone)
     user = profile.get() or {}
     return {"session": auth.make_token(phone, "session", auth.SESSION_SECONDS), "name": user.get("name", "")}
@@ -80,7 +80,7 @@ def delete(request: Request, transaction_id: int):
     try:
         return spend.delete_transaction(transaction_id)
     except ValueError as e:
-        raise HTTPException(404, str(e))
+        raise HTTPException(404, str(e)) from None
 
 
 @router.get("/export.csv")

@@ -9,13 +9,14 @@ from server.replies import Reply
 log = logging.getLogger("spenzo")
 HELP_WORDS = {"help", "menu", "?", "options", "features"}
 GREETINGS = {"hi", "hii", "hiii", "hello", "helo", "hey", "hey there", "start", "namaste", "yo", "sup", "hola"}
+LOGIN_WORDS = {"login", "log in", "dashboard", "open dashboard", "sign in"}
+UNDO_WORDS = {"undo", "undo that", "undo it", "delete that", "remove that", "cancel that", "galat", "galti"}
+WRAPPED_WORDS = {"wrapped", "my wrapped", "month wrapped", "monthly wrapped"}
+COMMANDS = HELP_WORDS | GREETINGS | LOGIN_WORDS | UNDO_WORDS | WRAPPED_WORDS   # never mistaken for a PDF password
 
 
 def _greeting(text: str) -> bool:
     return text.lower().strip("!.,? ") in GREETINGS
-LOGIN_WORDS = {"login", "log in", "dashboard", "open dashboard", "sign in"}
-UNDO_WORDS = {"undo", "undo that", "undo it", "delete that", "remove that", "cancel that", "galat", "galti"}
-WRAPPED_WORDS = {"wrapped", "my wrapped", "month wrapped", "monthly wrapped"}
 
 
 @dataclass
@@ -37,14 +38,18 @@ async def respond(msg: Incoming) -> list[Reply]:
     if is_new and not (msg.image or msg.audio or msg.pdf) and (not msg.text.strip() or _greeting(msg.text)):
         return first
     if msg.pdf:
-        return first + [await asyncio.to_thread(statements.from_pdf, *msg.pdf)]
+        return [*first, await asyncio.to_thread(statements.from_pdf, *msg.pdf)]
 
     if msg.button_id:
-        return first + [await asyncio.to_thread(replies.press, msg.button_id)]
+        try:
+            return [*first, await asyncio.to_thread(replies.press, msg.button_id)]
+        except ValueError as e:   # an old button: the spend or goal it points at is gone
+            return [*first, Reply(f"{e} Just tell me what you need.")]
 
     text = msg.text.strip()
-    if statements.waiting_for_password() and text and " " not in text and len(text) <= 64:
-        # Never reaches the AI or the chat history.
+    if (text and " " not in text and len(text) <= 64 and text.lower().strip("!.? ") not in COMMANDS
+            and await asyncio.to_thread(statements.waiting_for_password)):
+        # A locked PDF is waiting: this is its password. It never reaches the AI or the chat history.
         return [await asyncio.to_thread(statements.with_password, text)]
     heard = ""
     if msg.audio:

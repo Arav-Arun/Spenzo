@@ -48,7 +48,7 @@ def read_token(token: str, purpose: str) -> str:
         good = _b64(hmac.new(_secret, body.encode(), hashlib.sha256).digest())
         data = json.loads(_unb64(body))
     except Exception:
-        raise ValueError("Invalid link.")
+        raise ValueError("Invalid link.") from None
     if not hmac.compare_digest(sig, good) or data.get("u") != purpose:
         raise ValueError("Invalid link.")
     if data["e"] < time.time():

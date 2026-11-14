@@ -40,6 +40,12 @@ def _progress(g: dict) -> dict:
     return out
 
 
+def _goal_name(name: str) -> str:
+    """ "new laptop" -> "New laptop"; names the user capitalised stay as they are."""
+    name = " ".join(name.split())
+    return name[:1].upper() + name[1:] if name.islower() else name
+
+
 def add_goal(name: str, target: float, deadline: str = "") -> dict:
     """Start a savings goal ("Goa trip, ₹30,000 by March"). deadline YYYY-MM-DD, optional."""
     if target <= 0:
@@ -48,7 +54,7 @@ def add_goal(name: str, target: float, deadline: str = "") -> dict:
         check_date(deadline, future_days=365 * 30, past_days=0)
     return _progress(db.row("insert into goals (phone, name, target, deadline, created_at) "
                             "values (%s, %s, %s, %s, %s) returning *",
-                            current_user(), name.strip(), round(target, 2), deadline or None, today()))
+                            current_user(), _goal_name(name), round(target, 2), deadline or None, today()))
 
 
 def add_to_goal(name: str, amount: float) -> dict:
@@ -119,7 +125,7 @@ def portfolio() -> dict:
         return {"holdings": [], "facts": [], "mix_pct": {},
                 "tip": "Add holdings by name, or send a screenshot of your broker's holdings page."}
     with ThreadPoolExecutor(max_workers=8) as pool:
-        priced = [h | p for h, p in zip(holdings, pool.map(_price, holdings))]
+        priced = [h | p for h, p in zip(holdings, pool.map(_price, holdings), strict=True)]
     total = sum(h["value"] for h in priced)
     with_cost = [h for h in priced if h.get("invested")]
     invested = sum(h["invested"] for h in with_cost)

@@ -47,3 +47,7 @@ Thumbs.db
 *.local.md
 brand/*.md
 brand/raw/
+
+# Kept locally, not in the repo
+tests/
+.github/

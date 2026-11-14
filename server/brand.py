@@ -2,5 +2,4 @@
 from server.core import env
 
 NAME = "Spenzo"
-TAGLINE = "Your money buddy on WhatsApp"
 WEB_URL = env("WEB_URL", "https://www.spenzo.aravarun.in")

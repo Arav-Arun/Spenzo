@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ASSETS = Path(__file__).parent / "assets"
 PAPER, CARD, INK, MUTED, LINE = "#F3F6F0", "#FFFFFF", "#0E2A1F", "#56675D", "#DAE3D8"
-LEAF, LEAF_DEEP, LEAF_SOFT, MANGO, MANGO_SOFT = "#2E9E47", "#1D7533", "#E3F2DF", "#FFB627", "#FFF1D6"
+LEAF, LEAF_DEEP, LEAF_SOFT, MANGO = "#2E9E47", "#1D7533", "#E3F2DF", "#FFB627"
 NIGHT, NIGHT_TILE, PAPER_DIM = "#0E2A1F", "#173B2C", "#B9CBBE"
 W = 1080
 
@@ -185,4 +185,4 @@ def _wrap(s: str, f: ImageFont.FreeTypeFont, max_width: int) -> list[str]:
             current = word
         else:
             current = trial
-    return lines + [current] if current else lines
+    return [*lines, current] if current else lines

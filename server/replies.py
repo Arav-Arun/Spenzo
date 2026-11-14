@@ -22,7 +22,7 @@ class Reply:
     react: str = ""                                                # emoji reaction on the user's message
     sticker: str = ""                                              # Baaz sticker sent after the text: "celebrate"
     png: bytes | None = None                                       # a generated picture, with the text as caption
-    quick: bool = False                                            # a plain log that may go out as just a ✅
+    logged: float = 0                                              # a plain log of this amount: may go out as just a ✅
 
 
 def inr(amount: float) -> str:
@@ -47,7 +47,7 @@ def logged(e: dict) -> Reply:
     note = f"\n_{e['note']}_" if e.get("note") else ""
     return Reply(f"✅ {inr(e['amount'])} · {what} / {e['category']}{note}",
                  buttons=[(f"undo:{e['id']}", "↩️ Undo"), (f"edit:{e['id']}", "✏️ Edit"), ("month", "📊 This month")],
-                 quick=True)
+                 logged=e["amount"])
 
 
 def goal_sticker(goal: dict, added: float) -> str:

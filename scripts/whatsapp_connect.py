@@ -5,7 +5,7 @@
 
 Needs in .env: WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_APP_ID, WHATSAPP_APP_SECRET,
 WHATSAPP_VERIFY_TOKEN (and WHATSAPP_BUSINESS_ACCOUNT_ID if the token doesn't name its account). It:
-  1. checks the token and test number work,
+  1. checks the token and phone number work,
   2. finds the WhatsApp Business Account the token belongs to,
   3. sets the app's webhook (Meta calls the bot once to verify it),
   4. subscribes the account so its messages reach the webhook.
@@ -15,9 +15,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import httpx  # noqa: E402
+import httpx
 
-from server.core import env  # noqa: E402  (loads .env)
+from server.core import env
 
 VERSION = env("WHATSAPP_API_VERSION", "v25.0")
 GRAPH = f"https://graph.facebook.com/{VERSION}"
@@ -45,7 +45,7 @@ def main(callback_url: str) -> None:
 
     number = call("GET", v["WHATSAPP_PHONE_NUMBER_ID"], fields="display_phone_number,verified_name,quality_rating",
                   access_token=token)
-    print(f"✓ Test number works: {number.get('display_phone_number')} ({number.get('verified_name')})")
+    print(f"✓ Phone number works: {number.get('display_phone_number')} ({number.get('verified_name')})")
 
     info = call("GET", "debug_token", input_token=token, access_token=app_token)["data"]
     if not info.get("is_valid"):
@@ -73,7 +73,7 @@ def main(callback_url: str) -> None:
         call("POST", f"{waba}/subscribed_apps", access_token=token)
         print(f"✓ WhatsApp account {waba} subscribed: its messages now reach Spenzo")
 
-    print("\nDone. Send 'hi' from your phone to the test number.")
+    print("\nDone. Send 'hi' to Spenzo from your phone.")
 
 
 if __name__ == "__main__":

@@ -36,39 +36,6 @@ function StatusBar() {
   );
 }
 
-// What a sent photo shows: a bill, or a broker's holdings screen.
-function Photo({ kind }) {
-  if (kind === 'holdings') {
-    const rows = [['TCS', '₹56,320'], ['Reliance', '₹38,880'], ['PPFAS Flexi Cap', '₹33,410'], ['Nifty 50 Index', '₹19,620']];
-    return (
-      <div className="mb-1 w-[200px] rounded-md bg-white p-2.5 text-[10.5px] leading-tight text-black/80">
-        <div className="mb-1.5 font-bold text-black">Holdings (4)</div>
-        {rows.map(([n, v]) => <div key={n} className="flex justify-between border-t border-black/5 py-1"><span>{n}</span><span className="tabular">{v}</span></div>)}
-      </div>
-    );
-  }
-  return (
-    <div className="mb-1 w-[170px] rotate-[-1.5deg] rounded-sm bg-[#FFFDF6] p-2.5 font-mono text-[10px] leading-tight text-black/75 shadow-sm">
-      <div className="mb-1 text-center font-bold text-black">DOMINO’S PIZZA</div>
-      <div className="flex justify-between"><span>1 Farmhouse M</span><span>₹619</span></div>
-      <div className="flex justify-between"><span>1 Peppy Paneer M</span><span>₹559</span></div>
-      <div className="flex justify-between"><span>Taxes</span><span>₹62</span></div>
-      <div className="mt-1 flex justify-between border-t border-dashed border-black/30 pt-1 font-bold text-black"><span>TOTAL</span><span>₹1,240</span></div>
-    </div>
-  );
-}
-
-function Voice({ length }) {
-  const bars = [4, 9, 6, 12, 8, 14, 10, 6, 11, 7, 13, 5, 9, 6, 10, 4, 8, 5];
-  return (
-    <div className="flex items-center gap-2 py-0.5 pr-1">
-      <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-black/55" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg>
-      <div className="flex h-4 items-center gap-[2px]">{bars.map((h, i) => <span key={i} className="w-[2.5px] rounded-full bg-black/35" style={{ height: h }} />)}</div>
-      <span className="text-[11px] text-black/50 tabular">{length}</span>
-    </div>
-  );
-}
-
 function Bubble({ m }) {
   const meta = (
     <span className="float-right mt-1.5 ml-2 flex items-center gap-0.5 text-[10.5px] leading-none text-black/45">
@@ -79,14 +46,12 @@ function Bubble({ m }) {
   const shadow = 'shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]';
   if (m.me) {
     return (
-      <div className={`flow-root max-w-[82%] self-end rounded-lg rounded-tr-[3px] bg-[#D9FDD3] ${m.photo ? 'p-1' : 'px-2.5 py-1.5'} ${shadow}`}>
-        {m.photo && <Photo kind={m.photo} />}
-        {m.voice ? <Voice length={m.voice} /> : m.text}
-        <span className={m.photo ? 'px-1' : ''}>{meta}</span>
+      <div className={`flow-root max-w-[82%] self-end rounded-lg rounded-tr-[3px] bg-[#D9FDD3] px-2.5 py-1.5 ${shadow}`}>
+        {m.text}{meta}
       </div>
     );
   }
-  const extras = m.buttons?.length || m.link;
+  const extras = m.buttons?.length;
   return (
     <div className="max-w-[86%] self-start">
       <div className={`flow-root bg-white px-2.5 py-1.5 whitespace-pre-line ${shadow} ${extras ? 'rounded-t-lg rounded-tl-[3px]' : 'rounded-lg rounded-tl-[3px]'}`}>
@@ -94,9 +59,8 @@ function Bubble({ m }) {
       </div>
       {extras && (
         <div className="mt-px flex flex-col gap-px">
-          {(m.link ? [m.link] : m.buttons).map((b, i, all) => (
-            <span key={b} className={`flex items-center justify-center gap-1.5 bg-white py-2 text-[13px] font-medium text-[#027EB5] ${shadow} ${i === all.length - 1 ? 'rounded-b-lg' : ''}`}>
-              {m.link && <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+          {m.buttons.map((b, i, all) => (
+            <span key={b} className={`flex items-center justify-center bg-white py-2 text-[13px] font-medium text-[#027EB5] ${shadow} ${i === all.length - 1 ? 'rounded-b-lg' : ''}`}>
               {b}
             </span>
           ))}
@@ -106,8 +70,8 @@ function Bubble({ m }) {
   );
 }
 
-// The iPhone itself. Anything can go on its screen: the drawn chat, or a real screen recording.
-export function PhoneFrame({ children, className = '' }) {
+// The iPhone itself.
+function PhoneFrame({ children, className = '' }) {
   const side = 'absolute w-[3px] bg-[#3a3a3c]';
   return (
     <div className={`relative w-[300px] sm:w-[322px] ${className}`}>
@@ -126,11 +90,14 @@ export function PhoneFrame({ children, className = '' }) {
   );
 }
 
-// A real recording from the phone (it already shows the status bar, so it fills the whole screen).
-export function PhoneVideo({ src, poster, className = '' }) {
+// A real screenshot on the phone's screen, under the status bar.
+export function PhoneShot({ src, alt, className = '' }) {
   return (
     <PhoneFrame className={className}>
-      <video src={src} poster={poster} autoPlay muted loop playsInline preload="metadata" className="h-full w-full object-cover" />
+      <div className="flex h-full flex-col bg-white">
+        <StatusBar />
+        <img src={src} alt={alt} decoding="async" className="block min-h-0 w-full flex-1 object-cover object-top" />
+      </div>
     </PhoneFrame>
   );
 }

@@ -159,14 +159,16 @@ async def send(to: str, reply: Reply, reply_to: str = "") -> bool:
     return ok
 
 
-async def typing(message_id: str) -> None:
-    """Show blue ticks and 'typing…' while Spenzo thinks (clears on reply or after ~25s)."""
+async def typing(message_id: str, show: bool = True) -> None:
+    """Show blue ticks and 'typing…' while Spenzo thinks (clears on a reply or after ~25s).
+    show=False only marks the message read: a ✅ reaction doesn't clear the typing dots."""
     if not env("WHATSAPP_TOKEN"):
         return
+    body = {"messaging_product": "whatsapp", "status": "read", "message_id": message_id}
+    if show:
+        body["typing_indicator"] = {"type": "text"}
     async with httpx.AsyncClient(timeout=10) as client:
-        await client.post(f"{_graph()}/{env('WHATSAPP_PHONE_NUMBER_ID')}/messages", headers=_headers(),
-                          json={"messaging_product": "whatsapp", "status": "read", "message_id": message_id,
-                                "typing_indicator": {"type": "text"}})
+        await client.post(f"{_graph()}/{env('WHATSAPP_PHONE_NUMBER_ID')}/messages", headers=_headers(), json=body)
 
 
 async def download(media_id: str) -> tuple[bytes, str]:

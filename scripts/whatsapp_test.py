@@ -1,7 +1,7 @@
 """Test Spenzo on real WhatsApp, end to end. Replies arrive on your phone.
 
     ./scripts/dev.sh                        # bot + tunnel running, webhook connected
-    # from your phone, send "hi" to the test number first (WhatsApp only lets a business
+    # from your phone, send "hi" to Spenzo first (WhatsApp only lets a business
     # reply within 24 hours of your last message)
     uv run python scripts/whatsapp_test.py  # --keep keeps the test data; --phone +91… picks the tester
 
@@ -21,10 +21,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import httpx  # noqa: E402
+import httpx
 
-from server import core, db, profile, whatsapp  # noqa: E402
-from server.conversation import Incoming, respond  # noqa: E402
+from server import core, db, profile, whatsapp
+from server.conversation import Incoming, respond
 
 BOT = core.env("BOT_URL", "http://localhost:8000")
 # Each step, and what must be true in the database (or the reply) afterwards.
@@ -52,7 +52,7 @@ def tester() -> str:
         return core.phone(sys.argv[sys.argv.index("--phone") + 1])
     phone = db.value("select phone from users where phone like '+%' order by created_at desc limit 1")
     if not phone:
-        sys.exit("No one has messaged the bot yet. Send 'hi' to the test number from your phone, then rerun.")
+        sys.exit("No one has messaged the bot yet. Send 'hi' to Spenzo from your phone, then rerun.")
     return phone
 
 

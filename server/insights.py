@@ -70,7 +70,7 @@ def spending_chart(group_by: Literal["category", "merchant", "month", "day"] = "
         top = [(k, round(v, 2)) for k, v in totals.most_common(8)]
         result["rows"] = [{"name": k, "total": v} for k, v in top]
         title = f"{what} by {'category' if group_by == 'category' else 'place'}"
-        result["_image"] = cards.bars(title, _range_label(start, end), inr(total), top)
+        result["_image"] = cards.bars(title, _range_label(start, end), inr(round(total)), top)
         return result
 
     if group_by == "month":
@@ -82,7 +82,7 @@ def spending_chart(group_by: Literal["category", "merchant", "month", "day"] = "
         this = [round(sums[m.strftime("%Y-%m")], 2) for m in months]
         labels = [m.strftime("%b") for m in months]
         series = [(str(a.year), this, cards.LEAF)]
-        result["by_month"] = dict(zip([m.strftime("%Y-%m") for m in months], this))
+        result["by_month"] = dict(zip([m.strftime("%Y-%m") for m in months], this, strict=True))
         subtitle = _range_label(start, end)
         if compare_previous_year:
             last_rows = _expenses(date(a.year - 1, a.month, 1).isoformat(),
@@ -96,9 +96,9 @@ def spending_chart(group_by: Literal["category", "merchant", "month", "day"] = "
                 raise ValueError(f"No spending{f' matching {search!r}' if search else ''} this year or last.")
             series = [(str(a.year - 1), before, cards.MANGO), (str(a.year), this, cards.LEAF)]
             result["previous_year_total"] = round(sum(before), 2)
-            result["previous_year_by_month"] = dict(zip([f"{m.year - 1}-{m.month:02d}" for m in months], before))
+            result["previous_year_by_month"] = dict(zip([f"{m.year - 1}-{m.month:02d}" for m in months], before, strict=True))
             subtitle = f"{labels[0]}–{labels[-1]}, {a.year} vs {a.year - 1}"
-        result["_image"] = cards.columns(f"{what} by month", subtitle, inr(total), labels, series)
+        result["_image"] = cards.columns(f"{what} by month", subtitle, inr(round(total)), labels, series)
         return result
 
     a, b = date.fromisoformat(start), date.fromisoformat(end)
@@ -107,8 +107,8 @@ def spending_chart(group_by: Literal["category", "merchant", "month", "day"] = "
     for r in rows:
         sums[r["date"]] += r["amount"]
     values = [round(sums[d.isoformat()], 2) for d in days]
-    result["by_day"] = {d.isoformat(): v for d, v in zip(days, values) if v}
-    result["_image"] = cards.columns(f"{what} by day", _range_label(start, end), inr(total),
+    result["by_day"] = {d.isoformat(): v for d, v in zip(days, values, strict=True) if v}
+    result["_image"] = cards.columns(f"{what} by day", _range_label(start, end), inr(round(total)),
                                      [str(d.day) for d in days], [("", values, cards.LEAF)])
     return result
 

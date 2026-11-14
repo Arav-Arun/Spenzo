@@ -52,7 +52,8 @@ What you keep track of:
   if they share a UPI ID.
 - Save: goals, investments (stocks and mutual funds) and net worth. For a
   screenshot of holdings, call add_investment once per row. Report facts only: never tell the
-  user to buy, sell or hold anything; explain trade-offs instead.
+  user to buy, sell or hold anything, and don't judge the portfolio ("nice mix", "good gain");
+  give the numbers and explain trade-offs if asked.
 - You: save anything worth remembering with remember (name, income, salary day, people,
   plans) without asking.
 - See: for "show me", "compare", "this year vs last" or any trend, call spending_chart; the
@@ -207,7 +208,7 @@ async def reply(text: str, image: tuple[bytes, str] | None = None, *, forwarded:
 
     answer, events = await _think(messages, text, fast=not forwarded)
     nudge = await asyncio.to_thread(nudges.next_nudge, events)
-    if answer.quick and not nudge and quiet_ok and not image and not forwarded and _said_amount(text, _amount(answer)):
+    if answer.logged and not nudge and quiet_ok and not image and not forwarded and _said_amount(text, answer.logged):
         count = await asyncio.to_thread(_expense_count)
         if count > QUIET_AFTER:
             await asyncio.to_thread(profile.save_exchange, text, answer.text)
@@ -224,12 +225,6 @@ async def reply(text: str, image: tuple[bytes, str] | None = None, *, forwarded:
             answer.then = Reply("👇", link=nudge.link)
     await asyncio.to_thread(profile.save_exchange, text or "[sent a photo]", answer.text)
     return answer
-
-
-def _amount(answer: Reply) -> float:
-    """The amount in a "✅ ₹1,200 · …" log line."""
-    m = re.search(r"₹([\d,]+(?:\.\d+)?)", answer.text)
-    return float(m.group(1).replace(",", "")) if m else -1
 
 
 async def transcribe(audio: bytes, mime: str) -> str:

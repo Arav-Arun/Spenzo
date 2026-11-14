@@ -5,14 +5,14 @@ The PDF's text goes to the model, which returns every row as JSON. Rows already 
 (same day, kind and amount) are skipped, and so are transfers between the user's own accounts,
 card bill payments and reversals. Each import gets an id, so one tap undoes it.
 
-Locked PDFs (most Indian statements are) wait up to 10 minutes for the password. The password
-never reaches the AI or the chat history, and is forgotten once the PDF opens.
+Locked PDFs (most Indian statements are) wait in the database up to 10 minutes for the password,
+so a restart in between doesn't send the password on to the AI. The password never reaches the AI
+or the chat history, and the PDF is deleted once it opens.
 """
 import io
 import json
 import logging
 import secrets
-import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
@@ -28,12 +28,11 @@ from server.spend import CATEGORIES, FIELDS
 log = logging.getLogger("spenzo")
 
 MODEL = env("OPENAI_MODEL", "gpt-4.1-mini")
-MAX_PAGES, CHUNK_CHARS, LOCK_SECONDS = 40, 12_000, 600
+MAX_PAGES, CHUNK_CHARS = 40, 12_000
+LOCK_MINUTES = 10
 INCOME = ["Salary", "Freelance", "Refund", "Interest", "Gift", "Other income"]
 SKIP_REASONS = {"own_transfer": ("transfer", "between your own accounts"), "card_payment": ("card bill payment", ""),
                 "investment": ("investment", "(SIPs, stock buys)"), "reversal": ("reversed or failed payment", "")}
-
-_locked: dict[str, tuple[float, bytes, str]] = {}   # phone → (when, pdf, file name)
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -106,7 +105,7 @@ def _chunks(text: str) -> list[str]:
             out.append(current)
             current = ""
         current += line + "\n"
-    return out + [current] if current.strip() else out
+    return [*out, current] if current.strip() else out
 
 
 def _extract(chunk: str, part: int, parts: int) -> dict:
@@ -242,7 +241,7 @@ def summary(doc: dict, filename: str) -> Reply:
         big = max(spent, key=lambda t: t["amount"])
         lines.append(f"Biggest: {big['description'] or big['category']} {inr(round(big['amount']))}.")
     if not added:
-        return Reply("\n".join(lines + ["Nothing new to add: it's all logged already 👍"]))
+        return Reply("\n".join([*lines, "Nothing new to add: it's all logged already 👍"]))
     return Reply("\n".join(lines), buttons=[("month", "📊 This month"), (f"undo_import:{batch}", "↩️ Undo import")])
 
 
@@ -253,13 +252,29 @@ def _read_and_save(data: bytes, filename: str, password: str = "") -> Reply:
     return summary(extract(text), filename)
 
 
+def _lock(data: bytes, filename: str) -> None:
+    db.execute(f"delete from locked_files where created_at < now() - interval '{LOCK_MINUTES} minutes'")
+    db.execute("insert into locked_files (phone, data, filename) values (%s, %s, %s) on conflict (phone) do update "
+               "set data = excluded.data, filename = excluded.filename, created_at = now()",
+               current_user(), data, filename)
+
+
+def _locked_file() -> dict | None:
+    return db.row(f"select data, filename from locked_files where phone = %s "
+                  f"and created_at > now() - interval '{LOCK_MINUTES} minutes'", current_user())
+
+
+def _unlock() -> None:
+    db.execute("delete from locked_files where phone = %s", current_user())
+
+
 def from_pdf(data: bytes, filename: str = "") -> Reply:
     """A PDF sent or forwarded to Spenzo."""
-    _locked.pop(current_user(), None)
+    _unlock()
     try:
         return _read_and_save(data, filename)
     except Locked:
-        _locked[current_user()] = (time.time(), data, filename)
+        _lock(data, filename)
         return Reply("🔒 That PDF is locked. Send me its password and I'll open it.\n"
                      "_Bank statements usually use a mix of your name, date of birth or customer ID; the "
                      "email they came with says which. I don't keep the password._")
@@ -269,24 +284,22 @@ def from_pdf(data: bytes, filename: str = "") -> Reply:
 
 
 def waiting_for_password() -> bool:
-    hit = _locked.get(current_user())
-    if hit and time.time() - hit[0] > LOCK_SECONDS:
-        _locked.pop(current_user(), None)
-        return False
-    return hit is not None
+    return _locked_file() is not None
 
 
 def with_password(password: str) -> Reply:
     if password.lower() in ("cancel", "skip", "stop", "no"):
-        _locked.pop(current_user(), None)
+        _unlock()
         return Reply("Okay, skipped that PDF.")
-    _, data, filename = _locked[current_user()]
+    pending = _locked_file()
+    if not pending:
+        return Reply("That PDF has expired. Send it again and I'll ask for the password.")
     try:
-        reply = _read_and_save(data, filename, password)
+        reply = _read_and_save(bytes(pending["data"]), pending["filename"], password)
     except Locked:
         return Reply("That password didn't open it. Try again, or send *cancel*.")
     except Exception:
         log.exception("Couldn't read a PDF")
         reply = Reply("It opened, but I couldn't read it. Try screenshots of the pages instead.")
-    _locked.pop(current_user(), None)
+    _unlock()
     return reply

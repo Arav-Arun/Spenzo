@@ -4,18 +4,11 @@
 
 **Live:** [spenzo.aravarun.in](https://www.spenzo.aravarun.in) · message Spenzo on WhatsApp at +91 98202 23725
 
-```
-You     chai 20
-Spenzo  ✅ ₹20 · Chai / Food & Dining            [↩️ Undo] [✏️ Edit] [📊 This month]
-
-You     dinner 3000 split with Arav and Riya
-Spenzo  ✅ ₹1,000 · Dinner / Food & Dining
-        Arav and Riya owe you ₹1,000 each 🤝
-
-You     salary aaya 60k
-Spenzo  💸 Salary logged!
-        Payday! Move ₹7,500 to Goa trip? That keeps it on track.   [Move ₹7,500] [Not now]
-```
+<p align="center">
+  <img src="docs/images/statement.jpg" width="32%" alt="A forwarded, locked bank statement imported after the password">
+  <img src="docs/images/goal.jpg" width="32%" alt="A goal reached, and Baaz celebrates">
+  <img src="docs/images/wrapped.jpg" width="32%" alt="The monthly Wrapped card">
+</p>
 
 ---
 
@@ -42,6 +35,15 @@ Spenzo  💸 Salary logged!
 - Button taps (Undo, This month, Set budget…) are answered instantly without calling the AI.
 - Nudges only ride on replies to something you just did, once per month each. "stop nudges" turns them off.
 - Investments get facts (value, gains, concentration), never buy/sell tips.
+
+## Highlights
+
+Screenshots from the live bot on its own WhatsApp number, with made-up data.
+
+<table>
+  <tr><td width="33%" valign="top"><b>Log a spend in a second</b><br><sub>After a few, a plain “chai 20” just gets a ✅</sub><br><br><img src="docs/images/ticks.jpg" alt="Log a spend in a second"></td><td width="33%" valign="top"><b>Forward your bank statement</b><br><sub>Locked PDFs ask for the password, used once</sub><br><br><img src="docs/images/statement.jpg" alt="Forward your bank statement"></td><td width="33%" valign="top"><b>Snap the bill</b><br><sub>Bills and payment screenshots are read and logged</sub><br><br><img src="docs/images/bill.jpg" alt="Snap the bill"></td></tr>
+  <tr><td width="33%" valign="top"><b>Split with friends</b><br><sub>Your share logged, everyone else's tracked</sub><br><br><img src="docs/images/split.jpg" alt="Split with friends"></td><td width="33%" valign="top"><b>Goals that cheer you on</b><br><sub>Baaz stickers halfway and at the finish</sub><br><br><img src="docs/images/goal.jpg" alt="Goals that cheer you on"></td><td width="33%" valign="top"><b>Charts on request</b><br><sub>“Swiggy this year vs last” comes back as a picture</sub><br><br><img src="docs/images/chart.jpg" alt="Charts on request"></td></tr>
+</table>
 
 ## How it works
 
@@ -86,9 +88,9 @@ server/
   chat.py          terminal simulator; localdb.py throwaway Postgres for tests
 scripts/           setup_db.py · dev.sh (local bot + tunnel) · whatsapp_connect.py (point Meta at the bot)
                    whatsapp_test.py (16-step live test on real WhatsApp)
-tests/             pytest on a real embedded Postgres; no network
 website/           Vite + React + Tailwind: landing, /app dashboard, /pay, /privacy
 schema.sql         the tables
+docs/images/       README screenshots (website/public/highlights has the site's copies)
 server/assets/     fonts (Bricolage and Hanken Grotesk, OFL) and Baaz art for the pictures
 brand/             Baaz the mascot: original art and the WhatsApp profile photo
 ```
@@ -108,8 +110,7 @@ uv run python -m server.chat --memory
 A WhatsApp-style chat in your terminal on a throwaway database: buttons show as `[1] [2] [3]`; `/photo bill.jpg`, `/voice note.ogg` and `/pdf statement.pdf` send media, `/fwd text` sends a forwarded message, and pictures Spenzo sends are saved to a temp file.
 
 ```bash
-uv run pytest                     # 60 tests on an embedded Postgres, nothing to install
-cd website && npm install && npm run dev
+cd website && npm install && npm run dev   # http://localhost:5173
 ```
 
 To try it on real WhatsApp before deploying, fill in `.env` and run `./scripts/dev.sh`. It starts the bot, opens a public tunnel and prints the webhook URL to paste into Meta.

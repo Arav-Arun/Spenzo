@@ -7,7 +7,7 @@ from server.core import current_user, now
 HISTORY_MESSAGES = 10   # last 5 exchanges
 HISTORY_HOURS = 6
 MAX_FACTS = 30
-USER_TABLES = ["transactions", "budgets", "debts", "goals", "holdings", "messages", "nudges_sent"]
+USER_TABLES = ["transactions", "budgets", "debts", "goals", "holdings", "messages", "nudges_sent", "locked_files"]
 
 
 def get() -> dict | None:
@@ -29,13 +29,12 @@ def remember(fact: str = "", name: str = "", monthly_income: float = 0, salary_d
     facts = user["facts"] or []
     if fact.strip():
         facts = ([f for f in facts if f.lower() != fact.strip().lower()] + [fact.strip()])[-MAX_FACTS:]
-    saved = db.row(
+    return db.row(
         "update users set name = coalesce(nullif(%s, ''), name), monthly_income = coalesce(%s, monthly_income), "
         "salary_day = coalesce(%s, salary_day), facts = %s where phone = %s "
         "returning name, monthly_income, salary_day, facts",
         name.strip(), round(monthly_income, 2) if monthly_income > 0 else None,
         salary_day if 1 <= salary_day <= 31 else None, db.Jsonb(facts), current_user())
-    return saved
 
 
 def forget(fact: str) -> dict:
@@ -61,7 +60,7 @@ def sign_out_everywhere() -> dict:
 def delete_everything() -> dict:
     """Permanently delete all of this user's data. Only called after the user taps the confirm button."""
     with db.transaction():
-        for table in USER_TABLES + ["users"]:
+        for table in [*USER_TABLES, "users"]:
             db.execute(f"delete from {table} where phone = %s", current_user())
     return {"deleted": True}
 

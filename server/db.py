@@ -22,7 +22,7 @@ from psycopg_pool import ConnectionPool
 
 from server.core import env
 
-__all__ = ["rows", "row", "value", "execute", "transaction", "Jsonb", "use_url"]
+__all__ = ["Jsonb", "execute", "row", "rows", "transaction", "use_url", "value"]
 
 _url_override: str | None = None
 _in_transaction: ContextVar[Connection | None] = ContextVar("spenzo_tx", default=None)

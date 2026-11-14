@@ -40,7 +40,7 @@ def check_date(day: str, *, future_days: int = 1, past_days: int = 400) -> str:
     try:
         d = date.fromisoformat(day)
     except ValueError:
-        raise ValueError(f"'{day}' isn't a date. Use YYYY-MM-DD; today is {today()}.")
+        raise ValueError(f"'{day}' isn't a date. Use YYYY-MM-DD; today is {today()}.") from None
     t = date.fromisoformat(today())
     if d > t + timedelta(days=future_days) or d < t - timedelta(days=past_days):
         raise ValueError(f"{day} looks wrong: today is {today()} (India). Use a date near today, "

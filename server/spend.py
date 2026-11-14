@@ -105,8 +105,8 @@ def edit_transaction(transaction_id: int, amount: float | None = None, category:
                      description: str | None = None, note: str | None = None, date: str | None = None,
                      tags: list[str] | None = None) -> dict:
     """Change one of the user's transactions. Pass only what changes."""
-    changes = {k: v for k, v in dict(amount=amount, category=category, description=description,
-                                     note=note, date=date).items() if v is not None}
+    given = {"amount": amount, "category": category, "description": description, "note": note, "date": date}
+    changes = {k: v for k, v in given.items() if v is not None}
     if tags is not None:
         changes["tags"] = _clean_tags(tags)
     if date is not None:

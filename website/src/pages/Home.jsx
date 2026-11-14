@@ -1,12 +1,12 @@
 import { ArrowRight } from 'lucide-react';
 import { NAME, whatsappLink } from '../brand';
 import Dashboard from '../components/Dashboard';
-import FeatureShowcase from '../components/FeatureShowcase';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { WhatsAppIcon } from '../components/Icons';
 import Mascot from '../components/Mascot';
-import PhoneChat from '../components/PhoneChat';
+import PhoneChat, { PhoneShot } from '../components/PhoneChat';
+import Highlights from '../components/Highlights';
 import { SAMPLE_OVERVIEW, SAMPLE_PORTFOLIO } from '../lib/sample';
 
 const HERO_CHAT = [
@@ -20,7 +20,7 @@ const HERO_CHAT = [
 
 const STEPS = [
   { pose: 'wave', title: 'Say hi on WhatsApp', body: 'Tap the button and send the message. That’s your account made. No app, no forms, no password.' },
-  { pose: 'salute', title: 'Tell it what you spend', body: 'Type it, send a photo of the bill, or a voice note. In English, Hinglish or Hindi.' },
+  { pose: 'salute', title: 'Tell it what you spend', body: 'Type it, snap the bill, send a voice note, or forward your bank statement. In English, Hinglish or Hindi.' },
   { pose: 'report', title: 'Ask, and see the full picture', body: 'Ask anything about your money, or tap a button to open your dashboard.' },
 ];
 
@@ -36,6 +36,7 @@ const FAQ = [
   ['Do I need to download an app?', 'No. Spenzo lives in WhatsApp. The dashboard opens in your browser from a button in the chat.'],
   ['Do I have to connect my bank?', 'No. You tell Spenzo what you spend. It never asks for bank logins, card numbers or passwords.'],
   ['Who can see my data?', 'Only you. It’s tied to your WhatsApp number, and the dashboard only opens from a link sent to your own chat.'],
+  ['Can it read my bank statement?', 'Yes. Forward the PDF your bank emails you. If it’s locked, send the password: it’s used once to open the file and never stored. Spenzo leaves out transfers between your own accounts, card bill payments and anything you already logged, and one tap undoes the import.'],
   ['Will it tell me which stocks to buy?', 'No. It shows facts about your own investments, like their value and how they’re doing. It never gives buy or sell tips.'],
   ['Will it spam me?', 'No. It only speaks up in its replies to you, at most once per message, and “stop nudges” turns that off.'],
   ['How do I delete my data?', 'Send “delete my data” on WhatsApp and tap Yes. It’s permanent.'],
@@ -63,7 +64,7 @@ export default function Home() {
     <div className="min-h-screen font-sans">
       <Header />
 
-      <main className="mx-auto grid max-w-6xl items-center gap-14 px-4 pt-10 pb-16 sm:px-6 md:pt-16 lg:min-h-[calc(100svh-5.5rem)] lg:grid-cols-[1.05fr_0.95fr] lg:py-10">
+      <main className="mx-auto grid max-w-6xl items-center gap-14 px-4 pt-10 pb-16 sm:px-6 md:pt-16 lg:min-h-[calc(100svh-5.5rem)] lg:grid-cols-[minmax(0,1fr)_auto] lg:py-10">
         <div>
           <h1 className="mb-6 text-5xl leading-[1.02] font-extrabold md:text-7xl">Just text your&nbsp;money.</h1>
           <p className="mb-9 max-w-xl text-lg leading-relaxed text-muted md:text-xl">
@@ -72,8 +73,11 @@ export default function Home() {
           </p>
           <WhatsAppButton />
         </div>
-        <div className="relative isolate mx-auto w-fit">
-          <PhoneChat messages={HERO_CHAT} />
+        {/* The chat in front, and the dashboard it opens on a second phone behind (a real screenshot of /app). */}
+        <div className="relative isolate mx-auto w-fit lg:h-[720px] lg:w-[540px]">
+          <PhoneShot src="/hero/dashboard.webp" alt={`The ${NAME} dashboard on a phone`}
+            className="hidden lg:absolute lg:top-16 lg:right-0 lg:block lg:origin-top-right lg:scale-[0.9]" />
+          <PhoneChat messages={HERO_CHAT} className="lg:absolute lg:top-0 lg:left-0 lg:z-10" />
         </div>
       </main>
 
@@ -89,11 +93,9 @@ export default function Home() {
         </ol>
       </Section>
 
-      <div>
-        <Section id="features" title="Everything you can do in one chat" intro="See exactly what each conversation looks like, or tap a feature to jump to it.">
-          <FeatureShowcase />
-        </Section>
-      </div>
+      <Section id="features" title="Everything you can do in one chat" intro={`Real chats from ${NAME}’s own WhatsApp number: what you send, and what comes back.`}>
+        <Highlights />
+      </Section>
 
       <Section title="Your whole month, one tap away" intro="Every reply has a button that opens your dashboard: spending by day, budgets, goals, friends and investments. No password, ever.">
         <div className="rounded-3xl border border-line bg-paper p-3 sm:p-6">
@@ -115,7 +117,7 @@ export default function Home() {
 
       <div>
         <Section id="faq" title="Questions people ask">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-3 md:grid-cols-2">
             {FAQ.map(([q, a]) => (
               <details key={q} className="group rounded-2xl border border-line bg-card p-5 open:border-leaf">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
