@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MASCOT } from '../brand';
 
-// Baaz in a given pose (website/public/mascot/baaz-<pose>.webp).
+// Baaz in a given pose (assets/web/mascot/baaz-<pose>.webp).
 // Falls back to a simple drawing if a pose image is missing.
 export default function Mascot({ pose = 'wave', className = '', title }) {
   const [missing, setMissing] = useState(false);

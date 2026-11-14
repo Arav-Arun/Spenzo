@@ -45,9 +45,9 @@ Thumbs.db
 
 # Local notes, not part of the project
 *.local.md
-brand/*.md
-brand/raw/
+assets/raw/
 
 # Kept locally, not in the repo
 tests/
 .github/
+scripts/

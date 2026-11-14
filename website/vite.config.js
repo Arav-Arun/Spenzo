@@ -4,4 +4,5 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  publicDir: '../assets/web',   // every image lives in the repo's assets/ folder
 });

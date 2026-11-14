@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NAME } from '../brand';
 
 // The main features, each with a screenshot from Spenzo's real WhatsApp number cropped to the
-// message and the reply (website/public/highlights). `at` picks which part shows when the shot is
+// message and the reply (assets/web/highlights). `at` picks which part shows when the shot is
 // taller than its frame.
 const SHOWN = [
   { icon: CheckCheck, title: 'Log a spend in a second', body: 'Type “chai 20”. After your first few, Spenzo just ticks it. Say “undo” to take one back.', shot: 'ticks', at: 'object-bottom' },

@@ -6,14 +6,14 @@ Spenzo lives in WhatsApp. Track what you spend, split bills with friends, save f
 
 <table>
   <tr>
-    <td width="33%" valign="top"><img src="docs/images/ticks.jpg" width="100%" alt="Quick spends get a tick"><br><b>Log a spend in a second</b><br><sub>“chai 20” is logged and Spenzo just reacts ✅</sub></td>
-    <td width="33%" valign="top"><img src="docs/images/statement.jpg" width="100%" alt="A forwarded bank statement imported"><br><b>Forward your bank statement</b><br><sub>The whole month in one go; locked PDFs ask for the password</sub></td>
-    <td width="33%" valign="top"><img src="docs/images/bill.jpg" width="100%" alt="A bill photo read and logged"><br><b>Snap the bill</b><br><sub>Bills and payment screenshots are read and logged</sub></td>
+    <td width="33%" valign="top"><img src="assets/readme/ticks.jpg" width="100%" alt="Quick spends get a tick"><br><b>Log a spend in a second</b><br><sub>“chai 20” is logged and Spenzo just reacts ✅</sub></td>
+    <td width="33%" valign="top"><img src="assets/readme/statement.jpg" width="100%" alt="A forwarded bank statement imported"><br><b>Forward your bank statement</b><br><sub>The whole month in one go; locked PDFs ask for the password</sub></td>
+    <td width="33%" valign="top"><img src="assets/readme/bill.jpg" width="100%" alt="A bill photo read and logged"><br><b>Snap the bill</b><br><sub>Bills and payment screenshots are read and logged</sub></td>
   </tr>
   <tr>
-    <td width="33%" valign="top"><img src="docs/images/split.jpg" width="100%" alt="A split bill and who owes what"><br><b>Split with friends</b><br><sub>Your share is logged and everyone else’s is tracked</sub></td>
-    <td width="33%" valign="top"><img src="docs/images/goal.jpg" width="100%" alt="A goal reached with a Baaz sticker"><br><b>Goals that cheer you on</b><br><sub>Baaz sends a sticker halfway and at the finish</sub></td>
-    <td width="33%" valign="top"><img src="docs/images/wrapped.jpg" width="100%" alt="The monthly Wrapped card"><br><b>Your month, Wrapped</b><br><sub>A shareable card of last month’s highlights</sub></td>
+    <td width="33%" valign="top"><img src="assets/readme/split.jpg" width="100%" alt="A split bill and who owes what"><br><b>Split with friends</b><br><sub>Your share is logged and everyone else’s is tracked</sub></td>
+    <td width="33%" valign="top"><img src="assets/readme/goal.jpg" width="100%" alt="A goal reached with a Baaz sticker"><br><b>Goals that cheer you on</b><br><sub>Baaz sends a sticker halfway and at the finish</sub></td>
+    <td width="33%" valign="top"><img src="assets/readme/wrapped.jpg" width="100%" alt="The monthly Wrapped card"><br><b>Your month, Wrapped</b><br><sub>A shareable card of last month’s highlights</sub></td>
   </tr>
 </table>
 
@@ -34,9 +34,8 @@ flowchart LR
 ```
 server/        the bot: WhatsApp webhook, agent and tools, dashboard API, pictures (Pillow)
 website/       Vite + React + Tailwind: landing page, dashboard, pay page, privacy
-scripts/       database setup, local bot with a tunnel, Meta webhook setup, live WhatsApp test
+assets/        every image: web/ for the site, readme/, brand/ for Baaz, cards/ for the bot's pictures
 schema.sql     the tables
-brand/         Baaz the mascot
 ```
 
 ## Run it locally

@@ -1,5 +1,5 @@
 -- Spenzo database. Run once against an empty Postgres (Neon, Supabase…). Safe to re-run.
---   uv run python scripts/setup_db.py   (or: psql "$DATABASE_URL" -f schema.sql)
+--   psql "$DATABASE_URL" -f schema.sql
 
 -- Who the user is and what Spenzo remembers about them.
 create table if not exists users (

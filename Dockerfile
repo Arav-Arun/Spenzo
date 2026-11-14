@@ -9,6 +9,7 @@ COPY pyproject.toml ./
 RUN uv sync --no-dev --no-install-project
 
 COPY server ./server
+COPY assets/cards ./assets/cards
 
 EXPOSE 8000
 CMD ["sh", "-c", "uv run --no-dev uvicorn server.bot:app --host 0.0.0.0 --port ${PORT:-8000}"]
